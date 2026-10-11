@@ -14,6 +14,24 @@ final class WindowRouter {
     /// Open router windows across all routers (the activation policy is app-wide).
     private static var openWindowCount = 0
     private static var policyTask: Task<Void, Never>?
+    /// Whether windows should float above other apps (Settings › General).
+    private let keepOnTop: @MainActor () -> Bool
+    /// Never floated: onboarding must not cover System Settings while the user grants
+    /// the Accessibility permission there.
+    private static let neverOnTop: Set<String> = [WindowID.onboarding]
+
+    init(keepOnTop: @escaping @MainActor () -> Bool = { false }) {
+        self.keepOnTop = keepOnTop
+    }
+
+    private func level(for id: String) -> NSWindow.Level {
+        keepOnTop() && !Self.neverOnTop.contains(id) ? .floating : .normal
+    }
+
+    /// Re-applies the on-top setting to open windows (when the setting changes).
+    func applyLevels() {
+        for (id, window) in windows { window.level = level(for: id) }
+    }
 
     func show<Content: View>(
         _ id: String, title: String, size: NSSize, resizable: Bool = false,
@@ -31,6 +49,7 @@ final class WindowRouter {
         let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: mask, backing: .buffered, defer: false)
         window.title = title
         window.identifier = NSUserInterfaceItemIdentifier(id)
+        window.level = level(for: id)
         window.titleVisibility = titleVisible ? .visible : .hidden
         window.isReleasedWhenClosed = false
         let controller = NSHostingController(rootView: content())

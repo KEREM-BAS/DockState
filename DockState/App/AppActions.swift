@@ -12,7 +12,12 @@ import DockStateSystem
 @Observable
 final class AppActions {
     @ObservationIgnored let model: AppModel
-    @ObservationIgnored private let router = WindowRouter()
+    @ObservationIgnored private lazy var router = WindowRouter { [weak self] in
+        self?.model.settings.keepWindowsOnTop ?? false
+    }
+
+    /// Applies "Keep DockState windows on top" to the windows already open.
+    func applyWindowLevels() { router.applyLevels() }
     @ObservationIgnored lazy var updateChecker = UpdateChecker(settings: model.settings)
     /// Set when a newer release was found; shown in Settings › About.
     var availableUpdate: (version: String, url: URL)?
