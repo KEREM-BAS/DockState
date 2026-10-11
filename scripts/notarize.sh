@@ -1,7 +1,11 @@
 #!/bin/bash
-# Notarizes and staples a DMG with Apple's notary service.
+# Notarizes and staples DockState with Apple's notary service.
 #
+#   scripts/notarize.sh app                  # dist/DockState.app (submitted as a zip)
 #   scripts/notarize.sh dist/DockState-1.0.0.dmg
+#
+# Notarize the app first (so the app itself carries a stapled ticket and launches offline),
+# then build the DMG and notarize that too.
 #
 # Credentials (App Store Connect API key — recommended for CI):
 #   NOTARY_KEY_PATH   path to the AuthKey_XXXX.p8 file
@@ -10,7 +14,8 @@
 # or (Apple ID):
 #   APPLE_ID, APPLE_APP_PASSWORD (app-specific password), APPLE_TEAM_ID
 set -euo pipefail
-DMG="${1:?usage: notarize.sh <dmg>}"
+cd "$(dirname "$0")/.."
+TARGET="${1:?usage: notarize.sh app|<dmg>}"
 
 if [[ -n "${NOTARY_KEY_PATH:-}" ]]; then
   AUTH=(--key "$NOTARY_KEY_PATH" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID")
@@ -21,9 +26,21 @@ else
   exit 1
 fi
 
-xcrun notarytool submit "$DMG" "${AUTH[@]}" --wait --timeout 30m
-xcrun stapler staple "$DMG"
-xcrun stapler validate "$DMG"
-spctl --assess --type open --context context:primary-signature --verbose "$DMG"
-shasum -a 256 "$DMG" > "$DMG.sha256"
-echo "Notarized and stapled $DMG"
+if [[ "$TARGET" == "app" ]]; then
+  ZIP="dist/DockState-notarize.zip"
+  ditto -c -k --keepParent dist/DockState.app "$ZIP"
+  xcrun notarytool submit "$ZIP" "${AUTH[@]}" --wait --timeout 30m
+  rm -f "$ZIP"
+  xcrun stapler staple dist/DockState.app
+  xcrun stapler validate dist/DockState.app
+  spctl --assess --type execute --verbose dist/DockState.app
+  echo "Notarized and stapled dist/DockState.app"
+else
+  xcrun notarytool submit "$TARGET" "${AUTH[@]}" --wait --timeout 30m
+  xcrun stapler staple "$TARGET"
+  xcrun stapler validate "$TARGET"
+  spctl --assess --type open --context context:primary-signature --verbose "$TARGET"
+  NAME="$(basename "$TARGET")"
+  (cd "$(dirname "$TARGET")" && shasum -a 256 "$NAME" > "$NAME.sha256")
+  echo "Notarized and stapled $TARGET"
+fi

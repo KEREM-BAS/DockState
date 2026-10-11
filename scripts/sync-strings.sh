@@ -7,7 +7,8 @@ cd "$(dirname "$0")/.."
 
 DERIVED="build/DerivedData"
 xcodebuild -project DockState.xcodeproj -scheme DockState -configuration Debug \
-  -derivedDataPath "$DERIVED" SWIFT_EMIT_LOC_STRINGS=YES build -quiet
+  -derivedDataPath "$DERIVED" -destination "platform=macOS,arch=$(uname -m)" \
+  SWIFT_EMIT_LOC_STRINGS=YES build -quiet
 
 FILES=$(find "$DERIVED/Build/Intermediates.noindex/DockState.build" -name "*.stringsdata" -path "*arm64*" -o -name "*.stringsdata" -path "*x86_64*" | sort -u)
 ARGS=()

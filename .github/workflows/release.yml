@@ -1,8 +1,8 @@
 name: Release
 
 # Push a tag like v1.2.3 to build, sign, notarize and publish a DMG.
-# Without the signing secrets below the workflow still publishes, but the DMG is
-# clearly labelled "unsigned" and the release is marked as a pre-release.
+# Without the signing secrets (see docs/RELEASING.md) the workflow still publishes, but the
+# DMG is clearly labelled "-unsigned" and the release is marked as a pre-release.
 on:
   push:
     tags: ["v*"]
@@ -19,16 +19,23 @@ jobs:
   release:
     runs-on: macos-26
     env:
-      HAS_SIGNING: ${{ secrets.DEVELOPER_ID_CERTIFICATE_P12 != '' }}
+      # Signing is used only when every secret it needs is present.
+      HAS_SIGNING: ${{ secrets.DEVELOPER_ID_CERTIFICATE_P12 != '' && secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD != '' && secrets.DEVELOPER_ID_APPLICATION != '' && secrets.APPLE_TEAM_ID != '' && secrets.NOTARY_KEY_P8 != '' && secrets.NOTARY_KEY_ID != '' && secrets.NOTARY_ISSUER_ID != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Resolve version
         id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then V="${GITHUB_REF_NAME#v}"; else V="${{ inputs.version }}"; fi
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then V="${GITHUB_REF_NAME#v}"; else V="$INPUT_VERSION"; fi
+          if [[ ! "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::'$V' is not a version like 1.2.3 or 1.2.3-beta.1"
+            exit 1
+          fi
           echo "version=$V" >> "$GITHUB_OUTPUT"
-          echo "Building DockState $V"
+          echo "Building DockState $V (signed: $HAS_SIGNING)"
 
       - name: Run tests
         working-directory: Packages/DockStateKit
@@ -51,49 +58,70 @@ jobs:
           security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
           rm "$RUNNER_TEMP/cert.p12"
 
+      - name: Write notary key
+        if: env.HAS_SIGNING == 'true'
+        env:
+          NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
+        run: |
+          printf '%s\n' "$NOTARY_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+          echo "NOTARY_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+
       - name: Build app
         env:
           BUILD_NUMBER: ${{ github.run_number }}
           DEVELOPER_ID_APPLICATION: ${{ env.HAS_SIGNING == 'true' && secrets.DEVELOPER_ID_APPLICATION || '' }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: scripts/build-release.sh "${{ steps.version.outputs.version }}"
+          VERSION: ${{ steps.version.outputs.version }}
+        run: scripts/build-release.sh "$VERSION"
 
-      - name: Create DMG
-        env:
-          DEVELOPER_ID_APPLICATION: ${{ env.HAS_SIGNING == 'true' && secrets.DEVELOPER_ID_APPLICATION || '' }}
-          DMG_SUFFIX: ${{ env.HAS_SIGNING == 'true' && '' || '-unsigned' }}
-        run: scripts/make-dmg.sh "${{ steps.version.outputs.version }}"
-
-      - name: Notarize
+      - name: Notarize app
         if: env.HAS_SIGNING == 'true'
         env:
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
           NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
-          NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
-        run: |
-          export NOTARY_KEY_PATH="$RUNNER_TEMP/AuthKey.p8"
-          echo "$NOTARY_KEY_P8" > "$NOTARY_KEY_PATH"
-          scripts/notarize.sh dist/DockState-${{ steps.version.outputs.version }}.dmg
-          rm "$NOTARY_KEY_PATH"
+        run: scripts/notarize.sh app
+
+      - name: Create DMG
+        id: dmg
+        env:
+          DEVELOPER_ID_APPLICATION: ${{ env.HAS_SIGNING == 'true' && secrets.DEVELOPER_ID_APPLICATION || '' }}
+          # GitHub expressions have no ternary: `cond && '' || x` always yields x.
+          DMG_SUFFIX: ${{ env.HAS_SIGNING != 'true' && '-unsigned' || '' }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: scripts/make-dmg.sh "$VERSION"
+
+      - name: Notarize DMG
+        if: env.HAS_SIGNING == 'true'
+        env:
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+          DMG: ${{ steps.dmg.outputs.dmg }}
+        run: scripts/notarize.sh "$DMG"
 
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          DMG: ${{ steps.dmg.outputs.dmg }}
         run: |
-          V="${{ steps.version.outputs.version }}"
-          FLAGS=(--title "DockState $V" --generate-notes)
+          FLAGS=(--title "DockState $VERSION" --generate-notes)
           if [[ "$HAS_SIGNING" != "true" ]]; then
             FLAGS+=(--prerelease --notes "> [!WARNING]
-          > This build is **not signed or notarized** (no Developer ID configured). macOS will block it on first launch:
-          > right-click DockState.app → **Open**, or allow it in **System Settings › Privacy & Security**.")
+          > This build is **not signed or notarized**, so macOS blocks it the first time.
+          > Open DockState once, then go to **System Settings › Privacy & Security** and click **Open Anyway**.
+          > (On macOS 14 you can also right-click DockState.app and choose **Open**.)
+          > After updating an unsigned build, turn DockState's Accessibility permission off and on again.")
           fi
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+          if [[ "$VERSION" == *-* ]]; then FLAGS+=(--prerelease); fi
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             TAG="$GITHUB_REF_NAME"
           else
-            TAG="v$V"; FLAGS+=(--draft --target "$GITHUB_SHA")
+            TAG="v$VERSION"; FLAGS+=(--draft --target "$GITHUB_SHA")
           fi
-          gh release create "$TAG" dist/*.dmg dist/*.dmg.sha256 "${FLAGS[@]}"
+          gh release create "$TAG" "$DMG" "$DMG.sha256" "${FLAGS[@]}"
 
-      - name: Clean up keychain
+      - name: Clean up signing material
         if: always() && env.HAS_SIGNING == 'true'
-        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
+        run: |
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP/AuthKey.p8"
