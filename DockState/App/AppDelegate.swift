@@ -15,6 +15,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let toastPanel = FloatingPanel()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        if SelfTest.runIfRequested() { return }
+        #endif
         model.presenter = self
         UNUserNotificationCenter.current().delegate = self
         registerNotificationCategories()
