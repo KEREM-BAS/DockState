@@ -1,17 +1,13 @@
-//
-//  DockStateApp.swift
-//  DockState
-//
-//  Created by Kerem on 11.10.2026.
-//
-
 import SwiftUI
+import DockStateCore
 
 @main
 struct DockStateApp: App {
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        MenuBarExtra("DockState", systemImage: "rectangle.on.rectangle") {
+            Text(verbatim: "DockState")
+                .padding()
         }
+        .menuBarExtraStyle(.window)
     }
 }
