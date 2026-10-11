@@ -375,7 +375,8 @@ final class AppModel {
         await refresh()
         let message: String
         if result.changedSinceCount + result.goneCount > 0 {
-            message = String(localized: "\(result.restoredCount) windows moved back. \(result.changedSinceCount + result.goneCount) had changed and were left alone.")
+            message = String(localized: "\(result.restoredCount) windows moved back.") + " "
+                + String(localized: "\(result.changedSinceCount + result.goneCount) had changed and were left alone.")
         } else {
             message = String(localized: "Windows moved back")
         }
