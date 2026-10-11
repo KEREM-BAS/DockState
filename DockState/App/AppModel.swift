@@ -680,6 +680,7 @@ protocol Presenter: AnyObject {
     func showPreview(_ workspace: Workspace)
     func notifyMatch(workspace: Workspace, moves: Int)
     func notifyNewSetup()
+    func notifyUpdate(version: String, url: URL)
     func requestNotificationPermissionIfNeeded()
 }
 

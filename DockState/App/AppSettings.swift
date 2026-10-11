@@ -21,6 +21,9 @@ final class AppSettings {
     var useWindowTitles: Bool { didSet { defaults.set(useWindowTitles, forKey: Keys.titles) } }
     var missingDisplayPolicy: MissingDisplayPolicy { didSet { defaults.set(missingDisplayPolicy.rawValue, forKey: Keys.missing) } }
     var appNotRunningPolicy: AppNotRunningPolicy { didSet { defaults.set(appNotRunningPolicy.rawValue, forKey: Keys.notRunning) } }
+    /// Opt-in: look for a newer release on GitHub at most once a day.
+    var checkForUpdates: Bool { didSet { defaults.set(checkForUpdates, forKey: Keys.updates) } }
+    var lastUpdateCheck: Date? { didSet { defaults.set(lastUpdateCheck, forKey: Keys.lastUpdateCheck) } }
     /// Place windows of apps opened after a restore (see AppModel.placeLateApp).
     var placeLateApps: Bool { didSet { defaults.set(placeLateApps, forKey: Keys.placeLate) } }
     var didPromptForAccessibility: Bool { didSet { defaults.set(didPromptForAccessibility, forKey: Keys.prompted) } }
@@ -42,6 +45,8 @@ final class AppSettings {
         appNotRunningPolicy = defaults.string(forKey: Keys.notRunning).flatMap(AppNotRunningPolicy.init) ?? .skip
         didPromptForAccessibility = defaults.bool(forKey: Keys.prompted)
         placeLateApps = defaults.bool(forKey: Keys.placeLate)
+        checkForUpdates = defaults.bool(forKey: Keys.updates)
+        lastUpdateCheck = defaults.object(forKey: Keys.lastUpdateCheck) as? Date
         globalShortcutsEnabled = defaults.bool(forKey: Keys.shortcuts)
         if let data = defaults.data(forKey: Keys.shortcutCombos),
            let saved = try? JSONDecoder().decode([ShortcutAction: KeyCombo].self, from: data) {
@@ -59,6 +64,8 @@ final class AppSettings {
         static let notRunning = "appNotRunningPolicy"
         static let prompted = "didPromptForAccessibility"
         static let placeLate = "placeLateApps"
+        static let updates = "checkForUpdates"
+        static let lastUpdateCheck = "lastUpdateCheck"
         static let shortcuts = "globalShortcutsEnabled"
         static let shortcutCombos = "shortcutCombos"
     }

@@ -130,6 +130,22 @@ private struct GeneralSettings: View {
                 }
             }
             SettingsGroup {
+                SettingsRow(title: String(localized: "Check for updates automatically"),
+                            subtitle: String(localized: "Once a day, DockState asks GitHub for the list of releases. Nothing else is sent.")) {
+                    Toggle(String(localized: "Check for updates automatically"), isOn: $settings.checkForUpdates)
+                        .toggleStyle(.switch).labelsHidden().controlSize(.small)
+                        .onChange(of: settings.checkForUpdates) { _, on in if on { actions.checkForUpdatesIfDue() } }
+                }
+                SettingsRow(title: updateStatus, showsDivider: false) {
+                    if let update = actions.availableUpdate {
+                        Button(String(localized: "Download")) { NSWorkspace.shared.open(update.url) }
+                    } else {
+                        Button(String(localized: "Check Now")) { actions.checkForUpdatesNow() }
+                            .disabled(actions.isCheckingForUpdates)
+                    }
+                }
+            }
+            SettingsGroup {
                 SettingsRow(title: String(localized: "Accessibility"),
                             subtitle: String(localized: "Needed to move and resize windows"), showsDivider: false) {
                     if model.permissionGranted {
@@ -142,6 +158,15 @@ private struct GeneralSettings: View {
             }
         }
         .onAppear { loginEnabled = actions.opensAtLogin }
+    }
+
+    private var updateStatus: String {
+        if let update = actions.availableUpdate { return String(localized: "DockState \(update.version) is available") }
+        if actions.isCheckingForUpdates { return String(localized: "Checking for updates…") }
+        if let last = model.settings.lastUpdateCheck {
+            return String(localized: "Last checked \(last.formatted(.relative(presentation: .named)))")
+        }
+        return String(localized: "Updates")
     }
 }
 
