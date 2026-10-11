@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return AppModel()
     }()
     lazy var actions = AppActions(model: model)
+    private var statusItem: StatusItemController?
     private let resultPanel = FloatingPanel()
     private let toastPanel = FloatingPanel()
     #if DEBUG
@@ -40,6 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         #endif
         model.presenter = self
+        statusItem = StatusItemController(model: model, actions: actions)
         UNUserNotificationCenter.current().delegate = self
         registerNotificationCategories()
         model.start()
@@ -72,6 +74,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "onboarding": actions.showOnboarding(step: .welcome)
         case "permission": actions.showOnboarding(step: .permission)
         case "firstSave": actions.showOnboarding(step: .firstSave)
+        case "menubar":
+            // The real menu bar panel, opened as if the icon was clicked.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.statusItem?.open() }
         case "popover":
             router.show("popover", title: "DockState", size: NSSize(width: 320, height: 400), style: [.titled], titleVisible: false) {
                 MenuBarPopover().environment(model).environment(actions)

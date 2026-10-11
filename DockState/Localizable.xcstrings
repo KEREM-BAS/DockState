@@ -403,6 +403,16 @@
         }
       }
     },
+    "About DockState": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState Hakkında"
+          }
+        }
+      }
+    },
     "Accessibility": {
       "localizations": {
         "tr": {

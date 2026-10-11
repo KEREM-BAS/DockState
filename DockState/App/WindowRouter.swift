@@ -70,10 +70,8 @@ enum WindowID {
     static let preview = "preview"
 }
 
-/// Closes the menu bar popover (MenuBarExtra has no public dismiss for the window style).
+/// Closes the menu bar panel, e.g. after one of its actions opened a window.
 @MainActor
 func closeMenuBarPopover() {
-    for window in NSApp.windows where window.className.contains("MenuBarExtra") && window.isVisible {
-        window.close()
-    }
+    StatusItemController.close()
 }
