@@ -11,6 +11,18 @@ enum AppStyle {
         let hue = Double(hash % 360) / 360
         return Color(hue: hue, saturation: 0.45, brightness: 0.78)
     }
+
+    /// Black or white, whichever reads better on `fill` (WCAG relative luminance).
+    static func labelColor(on fill: Color) -> Color {
+        guard let c = NSColor(fill).usingColorSpace(.sRGB) else { return .white }
+        func linear(_ v: CGFloat) -> Double {
+            let v = Double(v)
+            return v <= 0.03928 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4)
+        }
+        let l = 0.2126 * linear(c.redComponent) + 0.7152 * linear(c.greenComponent) + 0.0722 * linear(c.blueComponent)
+        // Contrast with white is (1.05)/(l+0.05); with black (l+0.05)/0.05. Pick the higher.
+        return (1.05 / (l + 0.05)) >= ((l + 0.05) / 0.05) ? .white : .black.opacity(0.85)
+    }
 }
 
 /// The app's icon, or a coloured tile when the app isn't installed.

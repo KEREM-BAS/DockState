@@ -10,6 +10,8 @@ struct MapBox: Identifiable, Equatable {
         case origin
         /// A saved window that can't be restored.
         case missing
+        /// A saved window the user excluded from restoring.
+        case excluded
     }
 
     var id: String
@@ -41,7 +43,7 @@ struct LayoutMapView: View {
                         .offset(x: r.minX, y: r.minY)
                         .accessibilityLabel(d.name)
                 }
-                ForEach(boxes) { box in
+                ForEach(Self.drawingOrder(boxes)) { box in
                     let r = t.rect(box.frame)
                     boxView(box, size: r.size)
                         .frame(width: max(r.width, 2), height: max(r.height, 2))
@@ -53,6 +55,24 @@ struct LayoutMapView: View {
         .accessibilityElement(children: .contain)
     }
 
+    /// Outlines of where windows are now first, then windows from largest to smallest so
+    /// small windows stay visible on top of big ones, then dashed markers.
+    static func drawingOrder(_ boxes: [MapBox]) -> [MapBox] {
+        func rank(_ b: MapBox) -> Int {
+            switch b.style {
+            case .origin: 0
+            case .solid, .excluded: 1
+            case .missing: 2
+            }
+        }
+        return boxes.enumerated().sorted { a, b in
+            let ra = rank(a.element), rb = rank(b.element)
+            if ra != rb { return ra < rb }
+            if a.element.frame.area != b.element.frame.area { return a.element.frame.area > b.element.frame.area }
+            return a.offset < b.offset
+        }.map(\.element)
+    }
+
     @ViewBuilder
     private func boxView(_ box: MapBox, size: CGSize) -> some View {
         let shape = RoundedRectangle(cornerRadius: 3, style: .continuous)
@@ -60,8 +80,12 @@ struct LayoutMapView: View {
         case .solid:
             shape.fill(box.color)
                 .overlay(shape.strokeBorder(.black.opacity(0.15), lineWidth: 0.5))
-                .overlay(alignment: .topLeading) { label(box.label, color: .white, size: size) }
+                .overlay(alignment: .topLeading) { label(box.label, color: AppStyle.labelColor(on: box.color), size: size) }
                 .shadow(color: .black.opacity(0.15), radius: 1, y: 0.5)
+        case .excluded:
+            shape.fill(box.color.opacity(0.18))
+                .overlay(shape.strokeBorder(box.color, style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
+                .overlay(alignment: .topLeading) { label(box.label, color: .secondary, size: size) }
         case .origin:
             shape.strokeBorder(Color.secondary, style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
         case .missing:

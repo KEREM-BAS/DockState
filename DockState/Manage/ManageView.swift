@@ -31,12 +31,15 @@ struct ManageView: View {
                 .listStyle(.sidebar)
                 Button { actions.showSave() } label: {
                     Label(String(localized: "Save Current Layout…"), systemImage: "plus")
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
                 .buttonStyle(.borderless)
                 .disabled(!model.permissionGranted)
                 .padding(12)
+                .help(String(localized: "Save Current Layout…"))
             }
-            .frame(width: 210)
+            .frame(width: 220)
             .background(.regularMaterial)
 
             Divider()
@@ -59,7 +62,12 @@ struct ManageView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(minWidth: 860, minHeight: 520)
+        .frame(minWidth: 900, minHeight: 560)
+        .onChange(of: model.workspaces.map(\.id)) { _, ids in
+            // After a delete (or import), keep something sensible selected.
+            if let selected = actions.manageSelection, ids.contains(selected) { return }
+            actions.manageSelection = ids.first
+        }
     }
 }
 
@@ -81,7 +89,8 @@ private struct WorkspaceDetail: View {
                     .textFieldStyle(.plain)
                     .font(.system(size: 14, weight: .semibold))
                     .focused($nameFocused)
-                    .onSubmit { model.rename(workspace, to: editingName) }
+                    .onSubmit(commitRename)
+                    .accessibilityLabel(Text("Workspace name"))
                 Button(String(localized: "Update from Current Layout")) {
                     Task { await model.updateFromCurrentLayout(workspace) }
                 }
@@ -97,11 +106,33 @@ private struct WorkspaceDetail: View {
             .padding(.horizontal, 16)
             .frame(height: 44)
             Divider()
-            detailBody(connected: connected, plan: plan)
+            HStack(alignment: .top, spacing: 0) {
+                ScrollView {
+                    overview(connected: connected)
+                        .padding(18)
+                }
+                .frame(minWidth: 240, idealWidth: 270, maxWidth: 320)
+                Divider()
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(Copy.windowCount(workspace.windows.count)).font(.system(size: 12, weight: .semibold))
+                        Spacer()
+                        Text("Saved \(workspace.updatedAt.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 16).padding(.top, 14)
+                    WindowTable(workspace: workspace, plan: plan)
+                    Text("Unchecked windows are kept in the workspace but never moved.")
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .padding(.horizontal, 16).padding(.bottom, 12)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .layoutPriority(1)
+            }
         }
         .onAppear { editingName = workspace.name }
-        .onChange(of: workspace.id) { editingName = workspace.name }
-        .onChange(of: nameFocused) { _, focused in if !focused { model.rename(workspace, to: editingName) } }
+        .onChange(of: workspace.name) { _, name in if !nameFocused { editingName = name } }
+        .onChange(of: nameFocused) { _, focused in if !focused { commitRename() } }
         .confirmationDialog(String(localized: "Delete “\(workspace.name)”?"), isPresented: $confirmDelete) {
             Button(String(localized: "Delete"), role: .destructive) { model.delete(workspace) }
         } message: {
@@ -109,66 +140,61 @@ private struct WorkspaceDetail: View {
         }
     }
 
-    private func detailBody(connected: Bool, plan: RestorePlan?) -> some View {
-        ScrollView {
-            HStack(alignment: .top, spacing: 20) {
-                VStack(alignment: .leading, spacing: 14) {
-                    LayoutMapView(displays: workspace.displays, boxes: savedBoxes)
-                        .frame(height: 150)
-                        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
-                    VStack(spacing: 0) {
-                        ForEach(workspace.displays) { d in
-                            HStack {
-                                Text(verbatim: d.name)
-                                Spacer()
-                                Text(verbatim: spec(d)).foregroundStyle(.secondary)
-                            }
-                            .font(.system(size: 12))
-                            .padding(.horizontal, 10).padding(.vertical, 7)
-                            if d.id != workspace.displays.last?.id { Divider() }
-                        }
-                    }
-                    .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.separator, lineWidth: 0.5))
-                    Text(connected ? String(localized: "These displays are connected now.")
-                                   : String(localized: "Not connected now. Connect these displays to restore or update."))
-                        .font(.system(size: 11.5)).foregroundStyle(.secondary)
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("When these displays connect").font(.system(size: 12, weight: .semibold))
-                        Picker("", selection: Binding(get: { workspace.autoMode }, set: { model.setAutoMode($0, for: workspace) })) {
-                            ForEach(AutoMode.allCases, id: \.self) { Text(Copy.autoMode($0)).tag($0) }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        Text(Copy.autoModeHelp(workspace.autoMode))
-                            .font(.system(size: 11)).foregroundStyle(.tertiary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                .frame(width: 280)
+    private func commitRename() {
+        switch model.rename(workspace, to: editingName) {
+        case .renamed, .unchanged: break
+        case .empty: editingName = workspace.name
+        case .nameTaken:
+            editingName = workspace.name
+            NSSound.beep()
+        }
+    }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(Copy.windowCount(workspace.windows.count)).font(.system(size: 12, weight: .semibold))
-                        Spacer()
-                        Text("Saved \(workspace.updatedAt.formatted(date: .abbreviated, time: .shortened))")
-                            .font(.system(size: 11)).foregroundStyle(.tertiary)
+    private func overview(connected: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            LayoutMapView(displays: workspace.displays, boxes: savedBoxes)
+                .frame(height: 140)
+                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+            VStack(spacing: 0) {
+                ForEach(workspace.displays) { d in
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(verbatim: d.name).font(.system(size: 12)).lineLimit(1).truncationMode(.tail)
+                        Text(verbatim: spec(d)).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                     }
-                    WindowTable(workspace: workspace, plan: plan)
-                    Text("Unchecked windows are kept in the workspace but never moved.")
-                        .font(.system(size: 11)).foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .help(d.name)
+                    if d.id != workspace.displays.last?.id { Divider() }
                 }
             }
-            .padding(20)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.separator, lineWidth: 0.5))
+            Text(connected ? String(localized: "These displays are connected now.")
+                           : String(localized: "Not connected now. Connect these displays to restore or update."))
+                .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("When these displays connect").font(.system(size: 12, weight: .semibold))
+                // A vertical radio group fits any translation, unlike a segmented control.
+                Picker(String(localized: "When these displays connect"),
+                       selection: Binding(get: { workspace.autoMode }, set: { model.setAutoMode($0, for: workspace) })) {
+                    ForEach(AutoMode.allCases, id: \.self) { Text(Copy.autoMode($0)).tag($0) }
+                }
+                .pickerStyle(.radioGroup)
+                .labelsHidden()
+                Text(Copy.autoModeHelp(workspace.autoMode))
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
     private var savedBoxes: [MapBox] {
-        workspace.windows.reversed().compactMap { w in
+        workspace.windows.compactMap { w in
             guard let d = workspace.display(id: w.displayID) else { return nil }
             return MapBox(id: w.id.uuidString, frame: w.frameInDisplay.offsetBy(dx: d.frame.x, dy: d.frame.y),
-                          color: AppStyle.color(for: w.bundleID).opacity(w.isExcluded ? 0.35 : 1),
-                          label: w.appName, style: .solid)
+                          color: AppStyle.color(for: w.bundleID), label: w.appName,
+                          style: w.isExcluded ? .excluded : .solid)
         }
     }
 
@@ -187,57 +213,58 @@ private struct WindowTable: View {
     var plan: RestorePlan?
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Text("Window").frame(maxWidth: .infinity, alignment: .leading)
-                Text("Display").frame(width: 120, alignment: .leading)
-                Text("Status").frame(width: 80, alignment: .leading)
-            }
-            .font(.system(size: 11)).foregroundStyle(.secondary)
-            .padding(.leading, 34).padding(.trailing, 10).padding(.vertical, 6)
-            Divider()
-            ForEach(Array(workspace.windows.enumerated()), id: \.element.id) { index, w in
-                HStack(spacing: 8) {
-                    Toggle("", isOn: Binding(get: { !w.isExcluded }, set: { model.setExcluded(!$0, window: w, in: workspace) }))
-                        .toggleStyle(.checkbox).labelsHidden()
-                        .help(String(localized: "Include this window when restoring"))
-                    HStack(spacing: 7) {
-                        AppIconView(bundleID: w.bundleID, size: 14)
-                        (Text(verbatim: w.appName) + Text(verbatim: w.title.map { "  \($0)" } ?? "").foregroundColor(.secondary))
-                            .lineLimit(1).truncationMode(.tail)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(verbatim: workspace.display(id: w.displayID)?.name ?? "—")
-                        .foregroundStyle(.secondary).lineLimit(1)
-                        .frame(width: 120, alignment: .leading)
-                    status(w).frame(width: 80, alignment: .leading)
+        Table(workspace.windows) {
+            TableColumn(String(localized: "Include")) { w in
+                Toggle(isOn: Binding(get: { !w.isExcluded }, set: { model.setExcluded(!$0, window: w, in: workspace) })) {
+                    Text(verbatim: [w.appName, w.title].compactMap { $0 }.joined(separator: " — "))
                 }
-                .font(.system(size: 12))
-                .padding(.horizontal, 10).padding(.vertical, 5)
-                .background(index.isMultiple(of: 2) ? Color.clear : Color.primary.opacity(0.035))
+                .toggleStyle(.checkbox).labelsHidden()
+                .help(String(localized: "Include this window when restoring"))
+            }
+            .width(min: 44, ideal: 56, max: 70)
+            TableColumn(String(localized: "Window")) { w in
+                HStack(spacing: 7) {
+                    AppIconView(bundleID: w.bundleID, size: 16)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(verbatim: w.appName).lineLimit(1)
+                        if let title = w.title, !title.isEmpty {
+                            Text(verbatim: title).font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                    }
+                }
                 .opacity(w.isExcluded ? 0.5 : 1)
             }
+            .width(min: 110, ideal: 160)
+            TableColumn(String(localized: "Display")) { w in
+                Text(verbatim: workspace.display(id: w.displayID)?.name ?? "—")
+                    .foregroundStyle(.secondary).lineLimit(1)
+            }
+            .width(min: 60, ideal: 100, max: 200)
+            TableColumn(String(localized: "Status")) { w in
+                status(w).lineLimit(1)
+            }
+            .width(min: 70, ideal: 96, max: 160)
         }
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.separator, lineWidth: 0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .tableStyle(.inset(alternatesRowBackgrounds: true))
+        .font(.system(size: 12))
     }
 
     @ViewBuilder
     private func status(_ w: SavedWindow) -> some View {
         if w.isExcluded {
-            Text("Excluded").foregroundStyle(.tertiary)
+            Text("Excluded").foregroundStyle(.secondary)
         } else if let plan, let item = plan.items.first(where: { $0.saved.id == w.id }) {
             switch item.kind {
-            case .inPlace: Text("In place").foregroundStyle(.green)
-            case .move: Text("Moved").foregroundStyle(.secondary)
+            case .inPlace: Text("In place").foregroundStyle(Color(nsColor: .systemGreen))
+            case .move: Text("Out of place").foregroundStyle(.primary)
             case .skip(let reason):
                 Text(reason == .appNotRunning ? String(localized: "Not open") : String(localized: "Can’t restore"))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color(nsColor: .systemOrange))
                     .help(Copy.reason(reason, appName: w.appName))
             }
         } else {
-            Text(verbatim: "—").foregroundStyle(.tertiary)
+            Text(verbatim: "—").foregroundStyle(.secondary)
+                .help(String(localized: "Connect these displays to see the status."))
         }
     }
 }

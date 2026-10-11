@@ -364,13 +364,21 @@ final class AppModel {
         }
     }
 
-    func rename(_ target: Workspace, to newName: String) {
+    enum RenameResult { case renamed, unchanged, empty, nameTaken }
+
+    @discardableResult
+    func rename(_ target: Workspace, to newName: String) -> RenameResult {
         let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty, name != target.name else { return }
-        if let clash = workspace(named: name), clash.id != target.id { return }
+        guard !name.isEmpty else { return .empty }
+        guard name != target.name else { return .unchanged }
+        if let clash = workspace(named: name), clash.id != target.id {
+            presenter?.toast(String(localized: "A workspace named “\(name)” already exists."))
+            return .nameTaken
+        }
         var ws = target
         ws.name = name
         replace(ws, touch: false)
+        return .renamed
     }
 
     func setAutoMode(_ mode: AutoMode, for workspace: Workspace) {
