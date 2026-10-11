@@ -28,7 +28,7 @@ struct RestorePreviewView: View {
                         }
                         .font(.system(size: 12)).foregroundStyle(.secondary)
                         Spacer()
-                        Picker("", selection: $showAfter) {
+                        Picker(String(localized: "Show windows"), selection: $showAfter) {
                             Text("Now").tag(false)
                             Text("After").tag(true)
                         }
@@ -161,7 +161,7 @@ private struct PlanList: View {
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(verbatim: item.saved.appName).font(.system(size: 12))
                                 Text(Copy.reason(item.skipReason!, appName: item.saved.appName))
-                                    .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                                    .font(.system(size: 10.5)).foregroundStyle(.secondary)
                             }
                             Spacer()
                             if model.canOpenAndPlace(item.saved, reason: item.skipReason!) {
@@ -196,7 +196,7 @@ private struct PlanList: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(verbatim: saved.appName).font(.system(size: 12))
                 if let detail, !detail.isEmpty {
-                    Text(verbatim: detail).font(.system(size: 10.5)).foregroundStyle(.tertiary).lineLimit(1)
+                    Text(verbatim: detail).font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1)
                 }
             }
             Spacer()

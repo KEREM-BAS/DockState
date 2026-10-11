@@ -1,9 +1,6 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "": {
-      "shouldTranslate": false
-    },
     "%@ didn’t allow the move": {
       "localizations": {
         "tr": {
@@ -1134,6 +1131,22 @@
         }
       }
     },
+    "Layout of %lld windows on %lld displays": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Layout of %1$lld windows on %2$lld displays"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$lld ekrandaki %1$lld pencerenin yerleşimi"
+          }
+        }
+      }
+    },
     "Leave windows in place": {
       "localizations": {
         "tr": {
@@ -1850,6 +1863,16 @@
         }
       }
     },
+    "Show windows": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencereleri göster"
+          }
+        }
+      }
+    },
     "Shows what will move before restoring": {
       "localizations": {
         "tr": {
@@ -2036,6 +2059,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Geri Al"
+          }
+        }
+      }
+    },
+    "Undo Delete": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silmeyi Geri Al"
           }
         }
       }

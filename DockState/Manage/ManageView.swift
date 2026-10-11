@@ -49,7 +49,7 @@ struct ManageView: View {
                     WorkspaceDetail(workspace: ws).id(ws.id)
                 } else {
                     VStack(spacing: 8) {
-                        Image(systemName: "rectangle.on.rectangle").font(.system(size: 32)).foregroundStyle(.tertiary)
+                        Image(systemName: "rectangle.on.rectangle").font(.system(size: 32)).foregroundStyle(.tertiary).accessibilityHidden(true)
                         Text("No workspaces yet").font(.system(size: 13, weight: .semibold))
                         Text("Arrange your windows, then save the layout.").font(.system(size: 13)).foregroundStyle(.secondary)
                         Button(String(localized: "Save Current Layout…")) { actions.showSave() }
@@ -63,6 +63,15 @@ struct ManageView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 900, minHeight: 560)
+        .background {
+            // ⌘Z brings back a workspace deleted here (the toast's Undo is mouse-only).
+            Button(String(localized: "Undo Delete")) { model.undoDelete() }
+                .keyboardShortcut("z", modifiers: .command)
+                .disabled(!model.canUndoDelete)
+                .opacity(0)
+                .frame(width: 0, height: 0)
+                .accessibilityHidden(true)
+        }
         .onChange(of: model.workspaces.map(\.id)) { _, ids in
             // After a delete (or import), keep something sensible selected.
             if let selected = actions.manageSelection, ids.contains(selected) { return }

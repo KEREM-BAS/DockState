@@ -52,7 +52,9 @@ struct LayoutMapView: View {
             }
             .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
         }
-        .accessibilityElement(children: .contain)
+        // The drawing is a picture; VoiceOver gets a one-line summary instead of every box.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Layout of \(boxes.filter { $0.style != .origin }.count) windows on \(displays.count) displays"))
     }
 
     /// Outlines of where windows are now first, then windows from largest to smallest so
