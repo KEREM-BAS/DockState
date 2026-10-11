@@ -244,3 +244,18 @@ struct HalfMover: WindowMoving {
         #expect(!m.isAmbiguous)
     }
 }
+
+@Suite struct UpdateKeepsExclusionsTests {
+    @Test func exclusionsFollowTheWindowNotTheTitle() {
+        // Titles off: two Terminal windows, one excluded. Updating must keep exactly that one excluded.
+        let a = Scenario.live("com.apple.Terminal", "a", Frame(x: 20, y: 40, width: 800, height: 600), order: 0)
+        let b = Scenario.live("com.apple.Terminal", "b", Frame(x: 1300, y: 40, width: 500, height: 300), order: 1)
+        var ws = WorkspaceCapture.capture(name: "x", displays: [Fixtures.lg], windows: [a, b], includeTitles: false)
+        ws.windows[1].isExcluded = true
+        let keep = ws.liveIDsOfExcludedWindows(in: [a, b], runningBundleIDs: ["com.apple.Terminal"])
+        #expect(keep == [b.id])
+        let updated = WorkspaceCapture.capture(name: "x", displays: [Fixtures.lg], windows: [a, b], includeTitles: false, markExcluded: keep)
+        #expect(updated.windows.filter(\.isExcluded).count == 1)
+        #expect(updated.windows.first { $0.isExcluded }?.frameInDisplay.width == 500)
+    }
+}

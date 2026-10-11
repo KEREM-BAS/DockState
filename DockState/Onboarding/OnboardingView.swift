@@ -159,6 +159,14 @@ private struct PermissionStep: View {
             .padding(.horizontal, 40)
             .padding(.top, 12)
 
+            if model.permissionLooksStale {
+                Text("Already turned on? After an update, macOS can keep the switch on for the old version. Select DockState in the list, remove it with –, then add it again with +.")
+                    .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 40)
+                    .padding(.top, 8)
+            }
+
             HStack(spacing: 12) {
                 HStack(spacing: 8) {
                     Circle().fill(statusColor).frame(width: 8, height: 8)
@@ -191,12 +199,19 @@ private struct PermissionStep: View {
         .onAppear { model.beginWatchingPermission() }
         .onChange(of: model.permissionGranted) { _, granted in
             guard granted else { return }
+            model.stopWatchingPermission()
             Task {
                 // Let the user see the confirmation before moving on — no click needed.
                 try? await Task.sleep(for: .milliseconds(900))
                 await model.refresh()
-                actions.onboardingStep = .firstSave
-                NSApp.activate(ignoringOtherApps: true)
+                if model.settings.hasCompletedOnboarding {
+                    // Existing users came here from another action: continue with it
+                    // instead of the first-run "save your first workspace" step.
+                    actions.permissionGrantedForExistingUser()
+                } else {
+                    actions.onboardingStep = .firstSave
+                    NSApp.activate(ignoringOtherApps: true)
+                }
             }
         }
     }
@@ -253,6 +268,10 @@ private struct FirstSaveStep: View {
                         Text("Name").font(.system(size: 12, weight: .semibold))
                         TextField(String(localized: "Workspace name"), text: $name)
                             .textFieldStyle(.roundedBorder)
+                        if model.workspace(named: name) != nil {
+                            Text("This replaces the saved layout for “\(name.trimmingCharacters(in: .whitespaces))”.")
+                                .font(.system(size: 11.5)).foregroundStyle(.orange)
+                        }
                         HStack(spacing: 6) {
                             ForEach(nameChips, id: \.self) { chip in
                                 Button(chip) { name = chip }
@@ -274,9 +293,8 @@ private struct FirstSaveStep: View {
                 Spacer()
                 Button(String(localized: "Skip")) { actions.finishOnboarding() }
                 Button(String(localized: "Save Workspace")) {
-                    if let ws = model.saveCurrentLayout(named: name, excluding: excluded) {
+                    if model.saveCurrentLayout(named: name, excluding: excluded) != nil {
                         actions.finishOnboarding()
-                        model.presenter?.toast(String(localized: "Saved “\(ws.name)”"))
                     }
                 }
                 .keyboardShortcut(.defaultAction)

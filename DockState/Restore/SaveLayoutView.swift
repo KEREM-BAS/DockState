@@ -54,8 +54,10 @@ struct SaveLayoutView: View {
     }
 
     private func save() {
-        guard let ws = model.saveCurrentLayout(named: name) else { return }
+        // Return in the text field must obey the same rules as the disabled button.
+        guard model.permissionGranted, !model.capturableWindows.isEmpty,
+              !name.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        guard model.saveCurrentLayout(named: name) != nil else { return }
         actions.closeSave()
-        model.presenter?.toast(String(localized: "Saved “\(ws.name)”"))
     }
 }

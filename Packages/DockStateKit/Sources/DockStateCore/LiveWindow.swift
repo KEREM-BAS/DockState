@@ -54,9 +54,12 @@ public struct LiveWindow: Hashable, Sendable, Identifiable {
 /// Builds a workspace from the current windows. Only standard, visible windows on the
 /// current Space are captured.
 public enum WorkspaceCapture {
+    /// - Parameters:
+    ///   - excludedIDs: windows left out of the workspace entirely.
+    ///   - markExcluded: windows saved but marked "never move" (keeps exclusions on update).
     public static func capture(
         name: String, displays: [DisplayDescriptor], windows: [LiveWindow], includeTitles: Bool,
-        excluding excludedIDs: Set<LiveWindowID> = []
+        excluding excludedIDs: Set<LiveWindowID> = [], markExcluded: Set<LiveWindowID> = []
     ) -> Workspace {
         let saved: [SavedWindow] = windows.compactMap { w in
             guard w.isStandard, !w.isMinimized, !w.isFullscreen, !excludedIDs.contains(w.id),
@@ -65,7 +68,7 @@ public enum WorkspaceCapture {
                 bundleID: w.bundleID, appName: w.appName, title: includeTitles ? w.title : nil,
                 role: w.role, subrole: w.subrole, displayID: display.id,
                 frameInDisplay: w.frame.offsetBy(dx: -display.frame.x, dy: -display.frame.y),
-                appOrder: w.appOrder)
+                appOrder: w.appOrder, isExcluded: markExcluded.contains(w.id))
         }
         return Workspace(name: name, displays: displays, windows: saved)
     }
@@ -73,5 +76,18 @@ public enum WorkspaceCapture {
     /// Windows that would be captured (for the save sheet / onboarding list).
     public static func capturable(_ windows: [LiveWindow], displays: [DisplayDescriptor]) -> [LiveWindow] {
         windows.filter { $0.isStandard && !$0.isMinimized && !$0.isFullscreen && displays.display(containing: $0.frame) != nil }
+    }
+}
+
+public extension Workspace {
+    /// Live windows that currently correspond to this workspace's excluded windows, so an
+    /// update from the current layout can keep them excluded (by identity, not by title).
+    func liveIDsOfExcludedWindows(in live: [LiveWindow], runningBundleIDs: Set<String>) -> Set<LiveWindowID> {
+        let outcomes = WindowMatcher.match(saved: windows, live: live, runningBundleIDs: runningBundleIDs, expectedDisplays: [:])
+        var ids = Set<LiveWindowID>()
+        for w in windows where w.isExcluded {
+            if case .matched(let l) = outcomes[w.id] { ids.insert(l.id) }
+        }
+        return ids
     }
 }
