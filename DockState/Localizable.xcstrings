@@ -386,6 +386,16 @@
         }
       }
     },
+    "A workspace named “%@” already exists.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” adında bir çalışma alanı zaten var."
+          }
+        }
+      }
+    },
     "About": {
       "localizations": {
         "tr": {
@@ -630,6 +640,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Değişiklikler kaydedilmedi: çalışma alanı dosyası daha yeni bir DockState sürümüne ait."
+          }
+        }
+      }
+    },
+    "Connect these displays to see the status.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Durumu görmek için bu ekranları bağlayın."
           }
         }
       }
@@ -1044,6 +1064,16 @@
         }
       }
     },
+    "Include": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dahil"
+          }
+        }
+      }
+    },
     "Include this window when restoring": {
       "localizations": {
         "tr": {
@@ -1140,16 +1170,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Geri yüklediğinizde onları taşıyabilir ve boyutlandırabilir"
-          }
-        }
-      }
-    },
-    "Moved": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Taşınmış"
           }
         }
       }
@@ -1390,6 +1410,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Çalışma alanını açar"
+          }
+        }
+      }
+    },
+    "Out of place": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yerinde değil"
           }
         }
       }
