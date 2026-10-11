@@ -143,3 +143,24 @@ import Testing
         #expect(counter.count == 0)
     }
 }
+
+@Suite struct SetupKeyTests {
+    @Test func ignoresVisibleFrameButNotArrangement() {
+        var moved = Fixtures.homeDisplays
+        moved[1].visibleFrame = Frame(x: 0, y: 25, width: 2560, height: 1300) // Dock appeared
+        #expect(moved.setupKey == Fixtures.homeDisplays.setupKey)
+        moved[2].frame.origin(-1920, 0)
+        #expect(moved.setupKey != Fixtures.homeDisplays.setupKey)
+    }
+
+    @Test func orderDoesNotMatter() {
+        #expect(Fixtures.homeDisplays.reversed().map { $0 }.setupKey == Fixtures.homeDisplays.setupKey)
+    }
+
+    @Test func duplicateIDsAreMadeUnique() {
+        let a = Fixtures.display("SAME", x: 0), b = Fixtures.display("SAME", x: 1920)
+        let ids = [a, b].uniquingIDs().map(\.id)
+        #expect(Set(ids).count == 2)
+        #expect(ids[0] == "SAME")
+    }
+}
