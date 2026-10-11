@@ -73,7 +73,7 @@ Repository › *Settings* › *Secrets and variables* › *Actions* › **New re
 | `NOTARY_KEY_ID` | the key ID |
 | `NOTARY_ISSUER_ID` | the issuer ID |
 
-Signing is used only when **all seven** are set.
+Signing is used only when **all seven** are set. If only some of them are set, the release fails instead of quietly publishing an unsigned build.
 
 ### 5. Release
 

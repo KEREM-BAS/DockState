@@ -14,8 +14,13 @@
 # or (Apple ID):
 #   APPLE_ID, APPLE_APP_PASSWORD (app-specific password), APPLE_TEAM_ID
 set -euo pipefail
-cd "$(dirname "$0")/.."
 TARGET="${1:?usage: notarize.sh app|<dmg>}"
+# Resolve paths given relative to the caller's directory before moving to the repo root.
+absolute() { echo "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"; }
+[[ "$TARGET" == "app" ]] || TARGET="$(absolute "$TARGET")"
+[[ -z "${NOTARY_KEY_PATH:-}" ]] || NOTARY_KEY_PATH="$(absolute "$NOTARY_KEY_PATH")"
+cd "$(dirname "$0")/.."
+
 
 if [[ -n "${NOTARY_KEY_PATH:-}" ]]; then
   AUTH=(--key "$NOTARY_KEY_PATH" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID")
@@ -28,9 +33,9 @@ fi
 
 if [[ "$TARGET" == "app" ]]; then
   ZIP="dist/DockState-notarize.zip"
+  trap 'rm -f "$ZIP"' EXIT
   ditto -c -k --keepParent dist/DockState.app "$ZIP"
   xcrun notarytool submit "$ZIP" "${AUTH[@]}" --wait --timeout 30m
-  rm -f "$ZIP"
   xcrun stapler staple dist/DockState.app
   xcrun stapler validate dist/DockState.app
   spctl --assess --type execute --verbose dist/DockState.app
