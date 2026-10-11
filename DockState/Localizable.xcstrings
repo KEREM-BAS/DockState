@@ -1,0 +1,2267 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "": {
+      "shouldTranslate": false
+    },
+    "%@ didn’t allow the move": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ taşımaya izin vermedi"
+          }
+        }
+      }
+    },
+    "%@ displays connected": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ekranları bağlandı"
+          }
+        }
+      }
+    },
+    "%@ is in place": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ yerinde"
+          }
+        }
+      }
+    },
+    "%@ isn’t open": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ açık değil"
+          }
+        }
+      }
+    },
+    "%@ restored": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ geri yüklendi"
+          }
+        }
+      }
+    },
+    "%@ · not restored": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · geri yüklenmedi"
+          }
+        }
+      }
+    },
+    "%lld couldn’t be restored.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pencere geri yüklenemedi."
+          }
+        }
+      }
+    },
+    "%lld displays": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld display"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld displays"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ekran"
+          }
+        }
+      }
+    },
+    "%lld displays connected": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld display connected"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld displays connected"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ekran bağlı"
+          }
+        }
+      }
+    },
+    "%lld displays recognized: %@": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld display recognized: %@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld displays recognized: %@"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ekran tanındı: %@"
+          }
+        }
+      }
+    },
+    "%lld had changed and were left alone.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld had changed and was left alone."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld had changed and were left alone."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pencere değiştiği için olduğu gibi bırakıldı."
+          }
+        }
+      }
+    },
+    "%lld of %lld saved displays connected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld of %2$lld saved displays connected"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kayıtlı %2$lld ekrandan %1$lld tanesi bağlı"
+          }
+        }
+      }
+    },
+    "%lld of %lld windows": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld of %2$lld windows"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$lld pencereden %1$lld"
+          }
+        }
+      }
+    },
+    "%lld windows": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld window"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld windows"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pencere"
+          }
+        }
+      }
+    },
+    "%lld windows are back in place.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld window is back in place."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld windows are back in place."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pencere yerine döndü."
+          }
+        }
+      }
+    },
+    "%lld windows are out of place": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld window is out of place"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld windows are out of place"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pencere yerinde değil"
+          }
+        }
+      }
+    },
+    "%lld windows moved back.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld window moved back."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld windows moved back."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pencere geri taşındı."
+          }
+        }
+      }
+    },
+    "%lld windows moved.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld window moved."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld windows moved."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pencere taşındı."
+          }
+        }
+      }
+    },
+    "%lld windows on %@ will be saved as a workspace.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld window on %@ will be saved as a workspace."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld windows on %@ will be saved as a workspace."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$@ üzerindeki %1$lld pencere bir çalışma alanı olarak kaydedilecek."
+          }
+        }
+      }
+    },
+    "About": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hakkında"
+          }
+        }
+      }
+    },
+    "Accessibility": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erişilebilirlik"
+          }
+        }
+      }
+    },
+    "After": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonra"
+          }
+        }
+      }
+    },
+    "All %lld saved displays are connected": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kayıtlı %lld ekranın tümü bağlı"
+          }
+        }
+      }
+    },
+    "Allow Accessibility access to save and restore.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydetmek ve geri yüklemek için Erişilebilirlik erişimine izin verin."
+          }
+        }
+      }
+    },
+    "Allow DockState to arrange your windows": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState’in pencerelerinizi düzenlemesine izin verin"
+          }
+        }
+      }
+    },
+    "Allowed": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İzin verildi"
+          }
+        }
+      }
+    },
+    "Allow…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İzin Ver…"
+          }
+        }
+      }
+    },
+    "Already in place · %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zaten yerinde · %lld"
+          }
+        }
+      }
+    },
+    "Always restore": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her zaman geri yükle"
+          }
+        }
+      }
+    },
+    "Always restore %@ when these displays connect": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu ekranlar bağlandığında %@ düzenini her zaman geri yükle"
+          }
+        }
+      }
+    },
+    "Arrange your windows once and save them as a workspace.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencerelerinizi bir kez düzenleyin ve çalışma alanı olarak kaydedin."
+          }
+        }
+      }
+    },
+    "Arrange your windows, then save the layout.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencerelerinizi düzenleyin, ardından yerleşimi kaydedin."
+          }
+        }
+      }
+    },
+    "Arrange your windows, then save them.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencerelerinizi düzenleyin, ardından kaydedin."
+          }
+        }
+      }
+    },
+    "Ask me": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bana sor"
+          }
+        }
+      }
+    },
+    "Built-in": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dahili"
+          }
+        }
+      }
+    },
+    "Built-in display": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dahili ekran"
+          }
+        }
+      }
+    },
+    "Built-in display only": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yalnızca dahili ekran"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vazgeç"
+          }
+        }
+      }
+    },
+    "Can’t restore": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri yüklenemez"
+          }
+        }
+      }
+    },
+    "Copied": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopyalandı"
+          }
+        }
+      }
+    },
+    "Copy Diagnostics": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tanılama Bilgisini Kopyala"
+          }
+        }
+      }
+    },
+    "Couldn’t change the login item: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giriş öğesi değiştirilemedi: %@"
+          }
+        }
+      }
+    },
+    "Couldn’t open the app.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uygulama açılamadı."
+          }
+        }
+      }
+    },
+    "Couldn’t save workspaces to disk.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma alanları diske kaydedilemedi."
+          }
+        }
+      }
+    },
+    "Couldn’t tell which %@ window this is": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bunun hangi %@ penceresi olduğu anlaşılamadı"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sil"
+          }
+        }
+      }
+    },
+    "Delete this workspace": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu çalışma alanını sil"
+          }
+        }
+      }
+    },
+    "Delete “%@”?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” silinsin mi?"
+          }
+        }
+      }
+    },
+    "Deleted “%@”": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” silindi"
+          }
+        }
+      }
+    },
+    "Display": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekran"
+          }
+        }
+      }
+    },
+    "Do nothing": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiçbir şey yapma"
+          }
+        }
+      }
+    },
+    "DockState can": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState şunları yapabilir"
+          }
+        }
+      }
+    },
+    "DockState is open source.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState açık kaynaklıdır."
+          }
+        }
+      }
+    },
+    "DockState loaded what it could. A backup of the original file was kept at %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState yükleyebildiği kadarını yükledi. Özgün dosyanın bir yedeği şurada saklandı: %@."
+          }
+        }
+      }
+    },
+    "DockState needs Accessibility permission to see your windows.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState’in pencerelerinizi görebilmesi için Erişilebilirlik izni gerekiyor."
+          }
+        }
+      }
+    },
+    "DockState needs permission": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState izin gerektiriyor"
+          }
+        }
+      }
+    },
+    "DockState never": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState asla"
+          }
+        }
+      }
+    },
+    "DockState remembers where your windows sit for each display setup. When you plug your displays back in, it puts everything back — only when you say so.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState, her ekran düzeninde pencerelerinizin nerede durduğunu hatırlar. Ekranlarınızı yeniden bağladığınızda her şeyi yerine koyar — yalnızca siz istediğinizde."
+          }
+        }
+      }
+    },
+    "DockState shows a notification and waits for you.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState bir bildirim gösterir ve sizi bekler."
+          }
+        }
+      }
+    },
+    "DockState stays quiet. Restore from the menu bar.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState sessiz kalır. Menü çubuğundan geri yükleyin."
+          }
+        }
+      }
+    },
+    "DockState will quit and open again in the selected language.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState kapanıp seçilen dilde yeniden açılacak."
+          }
+        }
+      }
+    },
+    "DockState, needs attention": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState, ilgi bekliyor"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitti"
+          }
+        }
+      }
+    },
+    "Each workspace can ask, restore automatically, or do nothing when its displays connect. Change this in Manage Workspaces.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her çalışma alanı, ekranları bağlandığında sorabilir, otomatik geri yükleyebilir ya da hiçbir şey yapmayabilir. Bunu Çalışma Alanlarını Yönet bölümünden değiştirin."
+          }
+        }
+      }
+    },
+    "Every saved window is where you left it.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydedilen her pencere bıraktığınız yerde."
+          }
+        }
+      }
+    },
+    "Everything was already in place.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her şey zaten yerindeydi."
+          }
+        }
+      }
+    },
+    "Excluded": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hariç"
+          }
+        }
+      }
+    },
+    "Fix…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Düzelt…"
+          }
+        }
+      }
+    },
+    "Free and open source · MIT License": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ücretsiz ve açık kaynak · MIT Lisansı"
+          }
+        }
+      }
+    },
+    "General": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genel"
+          }
+        }
+      }
+    },
+    "Get Started": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başla"
+          }
+        }
+      }
+    },
+    "Helps with apps that have several windows. Titles are stored only on this Mac and never logged.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Birden çok penceresi olan uygulamalarda işe yarar. Başlıklar yalnızca bu Mac’te saklanır ve asla günlüğe yazılmaz."
+          }
+        }
+      }
+    },
+    "Home Desk": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ev Masası"
+          }
+        }
+      }
+    },
+    "If a saved display is missing": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kayıtlı bir ekran yoksa"
+          }
+        }
+      }
+    },
+    "If an app isn’t open": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir uygulama açık değilse"
+          }
+        }
+      }
+    },
+    "In System Settings, go to **Privacy & Security › Accessibility** and turn on DockState.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sistem Ayarları’nda **Gizlilik ve Güvenlik › Erişilebilirlik** bölümüne gidin ve DockState’i açın."
+          }
+        }
+      }
+    },
+    "In place": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yerinde"
+          }
+        }
+      }
+    },
+    "Include this window when restoring": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri yüklerken bu pencereyi dahil et"
+          }
+        }
+      }
+    },
+    "Includes versions and display models — never window titles or app names.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sürümleri ve ekran modellerini içerir — pencere başlıklarını veya uygulama adlarını asla içermez."
+          }
+        }
+      }
+    },
+    "Its display isn’t connected": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekranı bağlı değil"
+          }
+        }
+      }
+    },
+    "Language": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dil"
+          }
+        }
+      }
+    },
+    "Laptop Only": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yalnızca Dizüstü"
+          }
+        }
+      }
+    },
+    "Later": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonra"
+          }
+        }
+      }
+    },
+    "Leave windows in place": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencereleri olduğu yerde bırak"
+          }
+        }
+      }
+    },
+    "Main": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ana"
+          }
+        }
+      }
+    },
+    "Manage Workspaces…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma Alanlarını Yönet…"
+          }
+        }
+      }
+    },
+    "Move and resize them when you restore": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri yüklediğinizde onları taşıyabilir ve boyutlandırabilir"
+          }
+        }
+      }
+    },
+    "Moved": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taşınmış"
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ad"
+          }
+        }
+      }
+    },
+    "Needed to move and resize windows": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencereleri taşımak ve boyutlandırmak için gerekli"
+          }
+        }
+      }
+    },
+    "New display setup": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeni ekran düzeni"
+          }
+        }
+      }
+    },
+    "No saved workspace matches these displays.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu ekranlarla eşleşen kayıtlı çalışma alanı yok."
+          }
+        }
+      }
+    },
+    "No windows found on this Space.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu Alan’da pencere bulunamadı."
+          }
+        }
+      }
+    },
+    "No workspaces yet": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz çalışma alanı yok"
+          }
+        }
+      }
+    },
+    "Not Now": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şimdi Değil"
+          }
+        }
+      }
+    },
+    "Not allowed yet": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz izin verilmedi"
+          }
+        }
+      }
+    },
+    "Not connected now. Connect these displays to restore or update.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şu anda bağlı değil. Geri yüklemek veya güncellemek için bu ekranları bağlayın."
+          }
+        }
+      }
+    },
+    "Not open": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açık değil"
+          }
+        }
+      }
+    },
+    "Nothing to Restore": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri Yüklenecek Bir Şey Yok"
+          }
+        }
+      }
+    },
+    "Nothing to move": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taşınacak bir şey yok"
+          }
+        }
+      }
+    },
+    "Notify when known displays connect": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilinen ekranlar bağlandığında bildir"
+          }
+        }
+      }
+    },
+    "Now": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şimdi"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tamam"
+          }
+        }
+      }
+    },
+    "Office": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ofis"
+          }
+        }
+      }
+    },
+    "Once your windows are arranged, save this setup so DockState can restore it next time.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencereleriniz düzenlendiğinde bu düzeni kaydedin; DockState bir dahaki sefere geri yükleyebilsin."
+          }
+        }
+      }
+    },
+    "Open %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ uygulamasını aç"
+          }
+        }
+      }
+    },
+    "Open & Place": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aç ve Yerleştir"
+          }
+        }
+      }
+    },
+    "Open System Settings": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sistem Ayarlarını Aç"
+          }
+        }
+      }
+    },
+    "Open at login": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Girişte aç"
+          }
+        }
+      }
+    },
+    "Open it first": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önce aç"
+          }
+        }
+      }
+    },
+    "Opens the workspace": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma alanını açar"
+          }
+        }
+      }
+    },
+    "Permission granted — continuing…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İzin verildi — devam ediliyor…"
+          }
+        }
+      }
+    },
+    "Plug in your displays. DockState recognizes the setup.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekranlarınızı bağlayın. DockState düzeni tanır."
+          }
+        }
+      }
+    },
+    "Preview": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önizle"
+          }
+        }
+      }
+    },
+    "Put %lld windows back where you left them?": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Put %lld window back where you left it?"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Put %lld windows back where you left them?"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pencere bıraktığınız yere geri konsun mu?"
+          }
+        }
+      }
+    },
+    "Quit DockState": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState’ten Çık"
+          }
+        }
+      }
+    },
+    "Read the code on GitHub": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kodu GitHub’da inceleyin"
+          }
+        }
+      }
+    },
+    "Reads what’s inside your windows": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencerelerinizin içeriğini okumaz"
+          }
+        }
+      }
+    },
+    "Reconnect": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeniden Bağla"
+          }
+        }
+      }
+    },
+    "Records your screen or keystrokes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekranınızı veya tuş vuruşlarınızı kaydetmez"
+          }
+        }
+      }
+    },
+    "Redo": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yinele"
+          }
+        }
+      }
+    },
+    "Replace": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Değiştir"
+          }
+        }
+      }
+    },
+    "Replace the saved positions with how windows are arranged now.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kayıtlı konumları pencerelerin şu anki düzeniyle değiştir."
+          }
+        }
+      }
+    },
+    "Report an Issue": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sorun Bildir"
+          }
+        }
+      }
+    },
+    "Restart": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeniden Başlat"
+          }
+        }
+      }
+    },
+    "Restart DockState to change the language?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dili değiştirmek için DockState yeniden başlatılsın mı?"
+          }
+        }
+      }
+    },
+    "Restore": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri Yükle"
+          }
+        }
+      }
+    },
+    "Restore %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ düzenini geri yükle"
+          }
+        }
+      }
+    },
+    "Restore %lld Windows": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Restore %lld Window"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Restore %lld Windows"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Pencereyi Geri Yükle"
+          }
+        }
+      }
+    },
+    "Restore matching workspace": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eşleşen çalışma alanını geri yükle"
+          }
+        }
+      }
+    },
+    "Restored automatically · Always restore is on": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otomatik geri yüklendi · Her zaman geri yükle açık"
+          }
+        }
+      }
+    },
+    "Restore…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri Yükle…"
+          }
+        }
+      }
+    },
+    "Save": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydet"
+          }
+        }
+      }
+    },
+    "Save Current Layout": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geçerli Yerleşimi Kaydet"
+          }
+        }
+      }
+    },
+    "Save Current Layout…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geçerli Yerleşimi Kaydet…"
+          }
+        }
+      }
+    },
+    "Save Workspace": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma Alanını Kaydet"
+          }
+        }
+      }
+    },
+    "Save Workspace…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma Alanını Kaydet…"
+          }
+        }
+      }
+    },
+    "Save current layout": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geçerli yerleşimi kaydet"
+          }
+        }
+      }
+    },
+    "Save your first workspace": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İlk çalışma alanınızı kaydedin"
+          }
+        }
+      }
+    },
+    "Saved %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydedildi: %@"
+          }
+        }
+      }
+    },
+    "Saved workspaces couldn’t be read": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kayıtlı çalışma alanları okunamadı"
+          }
+        }
+      }
+    },
+    "Saved “%@”": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” kaydedildi"
+          }
+        }
+      }
+    },
+    "See what will move, then restore in one click. Undo anytime.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neyin taşınacağını görün, ardından tek tıkla geri yükleyin. İstediğiniz zaman geri alın."
+          }
+        }
+      }
+    },
+    "See which windows are open and where": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hangi pencerelerin açık olduğunu ve nerede durduğunu görebilir"
+          }
+        }
+      }
+    },
+    "Sends anything off your Mac": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac’inizden dışarıya hiçbir şey göndermez"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayarlar"
+          }
+        }
+      }
+    },
+    "Settings…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayarlar…"
+          }
+        }
+      }
+    },
+    "Shortcuts": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kısayollar"
+          }
+        }
+      }
+    },
+    "Show in Finder": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finder’da Göster"
+          }
+        }
+      }
+    },
+    "Shows what will move before restoring": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri yüklemeden önce neyin taşınacağını gösterir"
+          }
+        }
+      }
+    },
+    "Skip": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atla"
+          }
+        }
+      }
+    },
+    "Skip it": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atla"
+          }
+        }
+      }
+    },
+    "Status": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Durum"
+          }
+        }
+      }
+    },
+    "Step %lld of 3": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adım %lld / 3"
+          }
+        }
+      }
+    },
+    "System (%@)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sistem (%@)"
+          }
+        }
+      }
+    },
+    "The file was damaged, so DockState started fresh. A copy was kept at %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosya hasarlı olduğu için DockState sıfırdan başladı. Bir kopyası şurada saklandı: %@."
+          }
+        }
+      }
+    },
+    "The saved display is connected": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kayıtlı ekran bağlı"
+          }
+        }
+      }
+    },
+    "These displays are connected now.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu ekranlar şu anda bağlı."
+          }
+        }
+      }
+    },
+    "These displays match %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu ekranlar %@ ile eşleşiyor"
+          }
+        }
+      }
+    },
+    "They work in every app and take priority over the app’s own shortcut.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her uygulamada çalışırlar ve uygulamanın kendi kısayolundan önce gelirler."
+          }
+        }
+      }
+    },
+    "This display setup isn’t saved": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu ekran düzeni kayıtlı değil"
+          }
+        }
+      }
+    },
+    "This is how your windows are arranged right now.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencereleriniz şu anda böyle düzenlenmiş."
+          }
+        }
+      }
+    },
+    "This replaces the saved layout for “%@”.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu, “%@” için kayıtlı yerleşimin yerini alır."
+          }
+        }
+      }
+    },
+    "This window was closed": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu pencere kapatılmış"
+          }
+        }
+      }
+    },
+    "This workspace no longer exists.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu çalışma alanı artık yok."
+          }
+        }
+      }
+    },
+    "Unchecked windows are kept in the workspace but never moved.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İşaretlenmemiş pencereler çalışma alanında tutulur ama asla taşınmaz."
+          }
+        }
+      }
+    },
+    "Undo": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri Al"
+          }
+        }
+      }
+    },
+    "Undo Last Restore": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son Geri Yüklemeyi Geri Al"
+          }
+        }
+      }
+    },
+    "Undo last restore": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son geri yüklemeyi geri al"
+          }
+        }
+      }
+    },
+    "Update from Current Layout": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geçerli Yerleşimden Güncelle"
+          }
+        }
+      }
+    },
+    "Updated “%@”": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” güncellendi"
+          }
+        }
+      }
+    },
+    "Use global keyboard shortcuts": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genel klavye kısayollarını kullan"
+          }
+        }
+      }
+    },
+    "Use main display": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ana ekranı kullan"
+          }
+        }
+      }
+    },
+    "Use window titles to tell windows apart": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencereleri ayırt etmek için pencere başlıklarını kullan"
+          }
+        }
+      }
+    },
+    "View on GitHub": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub’da Görüntüle"
+          }
+        }
+      }
+    },
+    "Waiting for permission — this updates on its own.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İzin bekleniyor — bu kendiliğinden güncellenir."
+          }
+        }
+      }
+    },
+    "Welcome to DockState": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState’e Hoş Geldiniz"
+          }
+        }
+      }
+    },
+    "When these displays connect": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu ekranlar bağlandığında"
+          }
+        }
+      }
+    },
+    "Where it goes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gideceği yer"
+          }
+        }
+      }
+    },
+    "Where it is now": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şu anki yeri"
+          }
+        }
+      }
+    },
+    "Where it is now / can’t restore": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şu anki yeri / geri yüklenemez"
+          }
+        }
+      }
+    },
+    "Will move · %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taşınacak · %lld"
+          }
+        }
+      }
+    },
+    "Window": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencere"
+          }
+        }
+      }
+    },
+    "Window is in full screen": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencere tam ekranda"
+          }
+        }
+      }
+    },
+    "Window is minimized": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencere küçültülmüş"
+          }
+        }
+      }
+    },
+    "Windows are restored right away. You can still undo.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencereler hemen geri yüklenir. Yine de geri alabilirsiniz."
+          }
+        }
+      }
+    },
+    "Windows moved back": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencereler geri taşındı"
+          }
+        }
+      }
+    },
+    "Won’t restore · %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri yüklenmeyecek · %lld"
+          }
+        }
+      }
+    },
+    "Workspace %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma Alanı %lld"
+          }
+        }
+      }
+    },
+    "Workspace name": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma alanı adı"
+          }
+        }
+      }
+    },
+    "Workspaces": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma Alanları"
+          }
+        }
+      }
+    },
+    "Workspaces set to “Always restore” skip this.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Her zaman geri yükle” ayarlı çalışma alanları bunu atlar."
+          }
+        }
+      }
+    },
+    "Workspaces were saved by a newer DockState": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma alanları daha yeni bir DockState ile kaydedilmiş"
+          }
+        }
+      }
+    },
+    "You can rename or update it anytime.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İstediğiniz zaman yeniden adlandırabilir veya güncelleyebilirsiniz."
+          }
+        }
+      }
+    },
+    "You can undo any restore.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her geri yüklemeyi geri alabilirsiniz."
+          }
+        }
+      }
+    },
+    "Your windows won’t be affected. You can undo right after deleting.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pencereleriniz etkilenmez. Sildikten hemen sonra geri alabilirsiniz."
+          }
+        }
+      }
+    },
+    "Your workspace, right where you left it.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma alanınız, tam bıraktığınız yerde."
+          }
+        }
+      }
+    },
+    "and %lld more": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ve %lld tane daha"
+          }
+        }
+      }
+    },
+    "connected": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bağlı"
+          }
+        }
+      }
+    },
+    "macOS asks you to approve any app that moves other apps’ windows. DockState uses this permission only to read and set window positions and sizes.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS, başka uygulamaların pencerelerini taşıyan her uygulamayı onaylamanızı ister. DockState bu izni yalnızca pencere konumlarını ve boyutlarını okumak ve ayarlamak için kullanır."
+          }
+        }
+      }
+    },
+    "not connected": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bağlı değil"
+          }
+        }
+      }
+    },
+    "partly connected": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kısmen bağlı"
+          }
+        }
+      }
+    },
+    "the built-in display": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dahili ekran"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

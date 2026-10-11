@@ -298,11 +298,73 @@ enum Diagnostics {
     }
 }
 
-/// Placeholder until in-app language switching lands; follows the system language.
+/// Per-app language. macOS reads `AppleLanguages` from the app's defaults at launch,
+/// so a change needs a relaunch.
 private struct LanguageRow: View {
+    @State private var selection = AppLanguage.current
+    @State private var askRestart = false
+
     var body: some View {
         SettingsRow(title: String(localized: "Language")) {
-            Text("System").foregroundStyle(.secondary)
+            Picker("", selection: $selection) {
+                Text("System (\(AppLanguage.systemLanguageName))").tag(AppLanguage.system)
+                ForEach(AppLanguage.supported, id: \.self) { lang in
+                    Text(verbatim: lang.nativeName).tag(lang)
+                }
+            }
+            .labelsHidden().fixedSize()
+            .onChange(of: selection) { _, new in
+                guard new != AppLanguage.current else { return }
+                new.apply()
+                askRestart = true
+            }
         }
+        .alert(String(localized: "Restart DockState to change the language?"), isPresented: $askRestart) {
+            Button(String(localized: "Restart")) { AppLanguage.relaunch() }
+            Button(String(localized: "Later"), role: .cancel) {}
+        } message: {
+            Text("DockState will quit and open again in the selected language.")
+        }
+    }
+}
+
+enum AppLanguage: Hashable {
+    case system
+    case code(String)
+
+    /// Languages with a complete translation. Add a code here after adding it to Localizable.xcstrings.
+    static let supported: [AppLanguage] = [.code("en"), .code("tr")]
+
+    static var current: AppLanguage {
+        guard let list = UserDefaults.standard.persistentDomain(forName: Bundle.main.bundleIdentifier ?? "")?["AppleLanguages"] as? [String],
+              let first = list.first else { return .system }
+        return supported.first { if case .code(let c) = $0 { first.hasPrefix(c) } else { false } } ?? .system
+    }
+
+    static var systemLanguageName: String {
+        let preferred = Bundle.preferredLocalizations(from: Bundle.main.localizations, forPreferences: Locale.preferredLanguages).first ?? "en"
+        return Locale(identifier: preferred).localizedString(forLanguageCode: preferred)?.capitalized ?? preferred
+    }
+
+    var nativeName: String {
+        guard case .code(let c) = self else { return "" }
+        return Locale(identifier: c).localizedString(forLanguageCode: c)?.capitalized(with: Locale(identifier: c)) ?? c
+    }
+
+    func apply() {
+        switch self {
+        case .system: UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+        case .code(let c): UserDefaults.standard.set([c], forKey: "AppleLanguages")
+        }
+    }
+
+    @MainActor
+    static func relaunch() {
+        let path = Bundle.main.bundlePath
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", "sleep 0.7; /usr/bin/open \"$0\"", path]
+        try? task.run()
+        NSApp.terminate(nil)
     }
 }
