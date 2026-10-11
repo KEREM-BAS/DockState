@@ -1,11 +1,16 @@
 import Foundation
 import DockStateCore
+import DockStateSystem
 
 /// User-facing wording for core values. Kept in one place so translations stay consistent.
 enum Copy {
-    static func reason(_ reason: SkipReason, appName: String) -> String {
+    @MainActor
+    static func reason(_ reason: SkipReason, appName: String, bundleID: String? = nil) -> String {
         switch reason {
-        case .appNotRunning: String(localized: "\(appName) isn’t open")
+        case .appNotRunning:
+            bundleID.map { !AppLauncher.isInstalled($0) } == true
+                ? String(localized: "\(appName) isn’t installed on this Mac")
+                : String(localized: "\(appName) isn’t open")
         case .windowNotFound: String(localized: "This window was closed")
         case .ambiguous: String(localized: "Couldn’t tell which \(appName) window this is")
         case .minimized: String(localized: "Window is minimized")

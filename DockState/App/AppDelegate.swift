@@ -41,6 +41,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         #endif
         model.presenter = self
+        // DockState's windows are separate tools, never tabs of each other.
+        NSWindow.allowsAutomaticWindowTabbing = false
         statusItem = StatusItemController(model: model, actions: actions)
         UNUserNotificationCenter.current().delegate = self
         registerNotificationCategories()
@@ -103,7 +105,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     #endif
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        // Launching DockState again from Finder opens its main window.
+        // Clicking the Dock icon brings DockState's open windows forward; launching it
+        // again from Finder with no window open shows Manage.
+        if WindowRouter.hasOpenWindows { return true }
         actions.showManage()
         return false
     }
@@ -143,10 +147,14 @@ extension AppDelegate: Presenter {
         if let issue = model.storeIssue { actions.reportStoreIssue(issue) }
     }
 
-    func notifyMatch(workspace: Workspace, moves: Int) {
+    func notifyMatch(workspace: Workspace, moves: Int, appsToOpen: Int) {
         let content = UNMutableNotificationContent()
         content.title = String(localized: "\(workspace.name) displays connected")
-        content.body = String(localized: "Put \(moves) windows back where you left them?")
+        // Restoring from the notification also opens missing apps, so say so.
+        content.body = appsToOpen > 0
+            ? String(localized: "Put \(moves) windows back where you left them?") + " "
+                + String(localized: "\(appsToOpen) apps that aren’t open will be opened.")
+            : String(localized: "Put \(moves) windows back where you left them?")
         content.categoryIdentifier = Notifications.matchCategory
         content.userInfo = [Notifications.workspaceKey: workspace.id.uuidString]
         post(content, id: "match")

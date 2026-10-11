@@ -18,6 +18,13 @@ final class AppActions {
 
     /// Applies "Keep DockState windows on top" to the windows already open.
     func applyWindowLevels() { router.applyLevels() }
+
+    /// Opens a link (GitHub, the release page) so the browser isn't hidden underneath
+    /// DockState's on-top windows.
+    func openExternal(_ url: URL) {
+        router.lowerUntilReactivated()
+        NSWorkspace.shared.open(url)
+    }
     @ObservationIgnored lazy var updateChecker = UpdateChecker(settings: model.settings)
     /// Set when a newer release was found; shown in Settings › About.
     var availableUpdate: (version: String, url: URL)?
@@ -339,7 +346,7 @@ final class AppActions {
                 alert.addButton(withTitle: String(localized: "Download"))
                 alert.addButton(withTitle: String(localized: "Later"))
                 NSApp.activate(ignoringOtherApps: true)
-                if alert.runModal() == .alertFirstButtonReturn { NSWorkspace.shared.open(url) }
+                if alert.runModal() == .alertFirstButtonReturn { openExternal(url) }
             case .upToDate:
                 availableUpdate = nil
                 model.presenter?.toast(String(localized: "DockState is up to date."))

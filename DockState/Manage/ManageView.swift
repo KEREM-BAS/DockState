@@ -1,5 +1,6 @@
 import SwiftUI
 import DockStateCore
+import DockStateSystem
 
 /// Workspace management (design 1h): list on the left; displays, automation and windows
 /// on the right. "Update from Current Layout" replaces re-creating a workspace.
@@ -282,9 +283,10 @@ private struct WindowTable: View {
             case .inPlace: Text("In place").foregroundStyle(Color(nsColor: .systemGreen))
             case .move: Text("Out of place").foregroundStyle(.primary)
             case .skip(let reason):
-                Text(reason == .appNotRunning ? String(localized: "Not open") : String(localized: "Can’t restore"))
+                Text(reason != .appNotRunning ? String(localized: "Can’t restore")
+                     : AppLauncher.isInstalled(w.bundleID) ? String(localized: "Not open") : String(localized: "Not installed"))
                     .foregroundStyle(Color(nsColor: .systemOrange))
-                    .help(Copy.reason(reason, appName: w.appName))
+                    .help(Copy.reason(reason, appName: w.appName, bundleID: w.bundleID))
             }
         } else {
             Text(verbatim: "—").foregroundStyle(.secondary)

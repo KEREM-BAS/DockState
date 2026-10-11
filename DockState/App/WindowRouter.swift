@@ -11,9 +11,16 @@ import SwiftUI
 final class WindowRouter {
     private var windows: [String: NSWindow] = [:]
     private var closeObservers: [String: NSObjectProtocol] = [:]
+    private var reactivationObserver: NSObjectProtocol?
     /// Open router windows across all routers (the activation policy is app-wide).
     private static var openWindowCount = 0
     private static var policyTask: Task<Void, Never>?
+    /// The app the user was in before DockState's first window opened; it gets focus back
+    /// when the last DockState window closes.
+    private static weak var previousApp: NSRunningApplication?
+
+    /// Whether any DockState window is open (all routers).
+    static var hasOpenWindows: Bool { openWindowCount > 0 }
     /// Whether windows should float above other apps (Settings › General).
     private let keepOnTop: @MainActor () -> Bool
     /// Never floated: onboarding must not cover System Settings while the user grants
@@ -25,7 +32,28 @@ final class WindowRouter {
     }
 
     private func level(for id: String) -> NSWindow.Level {
-        keepOnTop() && !Self.neverOnTop.contains(id) ? .floating : .normal
+        // While onboarding is open nothing floats, so neither it nor System Settings
+        // (where the permission is granted) ends up underneath another DockState window.
+        let onboardingOpen = windows[WindowID.onboarding] != nil
+        return keepOnTop() && !onboardingOpen && !Self.neverOnTop.contains(id) ? .floating : .normal
+    }
+
+    /// Lets an external app (the browser for a link) come in front of DockState's windows
+    /// until DockState is used again.
+    func lowerUntilReactivated() {
+        guard keepOnTop() else { return }
+        for window in windows.values { window.level = .normal }
+        guard reactivationObserver == nil else { return }
+        reactivationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if let observer = self.reactivationObserver { NotificationCenter.default.removeObserver(observer) }
+                self.reactivationObserver = nil
+                self.applyLevels()
+            }
+        }
     }
 
     /// Re-applies the on-top setting to open windows (when the setting changes).
@@ -60,7 +88,9 @@ final class WindowRouter {
         if resizable { window.contentMinSize = size }
         window.center()
         window.setFrameAutosaveName("DockState.\(id)")
+        window.tabbingMode = .disallowed
         windows[id] = window
+        applyLevels()
         closeObservers[id] = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification, object: window, queue: .main
         ) { [weak self] _ in
@@ -80,10 +110,17 @@ final class WindowRouter {
 
     private func forget(_ id: String) {
         if let token = closeObservers.removeValue(forKey: id) { NotificationCenter.default.removeObserver(token) }
-        if windows.removeValue(forKey: id) != nil { Self.windowClosed() }
+        if windows.removeValue(forKey: id) != nil {
+            applyLevels()
+            Self.windowClosed()
+        }
     }
 
     private static func windowOpened() {
+        if openWindowCount == 0 {
+            let front = NSWorkspace.shared.frontmostApplication
+            if front?.processIdentifier != ProcessInfo.processInfo.processIdentifier { previousApp = front }
+        }
         openWindowCount += 1
         policyTask?.cancel()
         if NSApp.activationPolicy() != .regular { NSApp.setActivationPolicy(.regular) }
@@ -96,8 +133,17 @@ final class WindowRouter {
         policyTask?.cancel()
         policyTask = Task {
             try? await Task.sleep(for: .milliseconds(400))
+            // An alert (e.g. after onboarding) still needs DockState to be a regular app.
+            while NSApp.modalWindow != nil {
+                try? await Task.sleep(for: .milliseconds(400))
+                if Task.isCancelled { return }
+            }
             guard !Task.isCancelled, openWindowCount == 0 else { return }
             NSApp.setActivationPolicy(.accessory)
+            // Hand focus back instead of leaving an invisible app active.
+            if NSApp.isActive {
+                if let previousApp, !previousApp.isTerminated { previousApp.activate() } else { NSApp.deactivate() }
+            }
         }
     }
 

@@ -311,7 +311,9 @@ final class AppModel {
             suggestedSetupKeys.insert(key)
             presenter?.notifyNewSetup()
         case .notifyMatch(let moves):
-            if let ws = candidate?.workspace { presenter?.notifyMatch(workspace: ws, moves: moves) }
+            if let ws = candidate?.workspace {
+                presenter?.notifyMatch(workspace: ws, moves: moves, appsToOpen: appsToOpen(for: plan(for: ws)).count)
+            }
         case .restoreAutomatically:
             guard let ws = candidate?.workspace else { break }
             if isBusy {
@@ -562,6 +564,10 @@ final class AppModel {
     // MARK: - Restore & undo
 
     func restore(_ workspace: Workspace, automatic: Bool = false) async {
+        #if DEBUG
+        // Demo mode must never launch or move real apps.
+        if isDemo { loadDemoResult(); presenter?.showResult(); return }
+        #endif
         guard permissionGranted, !isBusy else { return }
         isBusy = true
         defer { isBusy = false }
@@ -570,18 +576,31 @@ final class AppModel {
 
         // Apps are only launched when the user restores by hand — an automatic restore
         // must never start apps the user had quit.
+        var opened: [String] = []
         if !automatic {
-            let toOpen = Set(appsToOpen(for: plan))
+            let toOpen = appsToOpen(for: plan)
             if !toOpen.isEmpty {
+                // A manual restore is consent: windows of these apps that appear later
+                // (after a splash or welcome window) are placed too.
+                restoredOnSetup[workspace.id] = displays.setupKey
                 var expected: [String: Int] = [:]
                 for item in windowsFromAppsToOpen(for: plan) { expected[item.saved.bundleID, default: 0] += 1 }
-                for bundleID in toOpen { _ = await AppLauncher.launch(bundleID) }
-                await waitForWindows(expected)
+                var failed: [String] = []
+                for bundleID in toOpen {
+                    if await AppLauncher.launch(bundleID) { opened.append(bundleID) } else { failed.append(bundleID) }
+                }
+                expected = expected.filter { opened.contains($0.key) }
+                if !expected.isEmpty { await waitForWindows(expected) }
+                if !failed.isEmpty {
+                    let names = failed.compactMap { id in workspace.windows.first { $0.bundleID == id }?.appName }
+                    presenter?.toast(String(localized: "Couldn’t open \(ListFormatter.localizedString(byJoining: names))."))
+                }
                 plan = self.plan(for: workspace)
             }
         }
 
-        let result = await RestoreExecutor.execute(plan, mover: windowSystem, automatic: automatic)
+        var result = await RestoreExecutor.execute(plan, mover: windowSystem, automatic: automatic)
+        result.openedApps = opened
         log.info("Restore: moved \(result.movedCount, privacy: .public), not restored \(result.notRestored.count, privacy: .public)")
         if !result.undo.entries.isEmpty { undoRecord = result.undo }
         settled.merge(result.undo.settledPlacements) { _, new in new }
@@ -631,23 +650,41 @@ final class AppModel {
     /// Waits until each launched app shows its expected number of standard windows, or
     /// its window count stops growing for a second (apps open restored windows one by
     /// one), at most `timeout`. Only the launched apps are scanned while waiting.
+    /// Waits until each launched app shows its expected number of standard windows, or
+    /// its window count stops growing for a second (apps open restored windows one by
+    /// one), at most `timeout`. An app that finished launching but shows no window for two
+    /// seconds is given up on, so it can't stall the restore. Only the launched apps are
+    /// scanned while waiting.
     private func waitForWindows(_ expected: [String: Int], timeout: Duration = .seconds(8)) async {
         let deadline = ContinuousClock.now + timeout
+        var pending = expected
         var lastCounts: [String: Int] = [:]
         var stableSince = ContinuousClock.now
+        var windowlessSince: [String: ContinuousClock.Instant] = [:]
         let system = windowSystem
-        while ContinuousClock.now < deadline {
+        while ContinuousClock.now < deadline, !pending.isEmpty {
             try? await Task.sleep(for: .milliseconds(400))
-            let apps = AccessibilityWindowSystem.runningApps().filter { expected[$0.bundleID] != nil }
+            let apps = AccessibilityWindowSystem.runningApps().filter { pending[$0.bundleID] != nil }
             let windows = await Task.detached(priority: .userInitiated) { system.windows(of: apps) }.value
             var counts: [String: Int] = [:]
             for w in windows where w.isStandard && !w.isMinimized { counts[w.bundleID, default: 0] += 1 }
-            if expected.allSatisfy({ counts[$0.key, default: 0] >= $0.value }) { break }
+            let now = ContinuousClock.now
+            for (bundleID, want) in pending {
+                let have = counts[bundleID, default: 0]
+                if have >= want { pending[bundleID] = nil; continue }
+                let launched = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).contains { $0.isFinishedLaunching }
+                if have == 0 && launched {
+                    let since = windowlessSince[bundleID] ?? now
+                    windowlessSince[bundleID] = since
+                    if now - since >= .seconds(2) { pending[bundleID] = nil }
+                } else {
+                    windowlessSince[bundleID] = nil
+                }
+            }
             if counts != lastCounts {
                 lastCounts = counts
-                stableSince = ContinuousClock.now
-            } else if expected.keys.allSatisfy({ counts[$0, default: 0] > 0 }),
-                      ContinuousClock.now - stableSince >= .seconds(1) {
+                stableSince = now
+            } else if pending.keys.allSatisfy({ counts[$0, default: 0] > 0 }), now - stableSince >= .seconds(1) {
                 break
             }
         }
@@ -672,6 +709,9 @@ final class AppModel {
               ws.windows.contains(where: { $0.bundleID == bundleID && !$0.isExcluded }) else { return }
         let expected = ws.windows.filter { $0.bundleID == bundleID && !$0.isExcluded }.count
         await waitForWindows([bundleID: expected])
+        // A restore that opened this app may still be running: let it finish, then place
+        // whatever it didn't (windows that showed up late).
+        for _ in 0..<40 where isBusy { try? await Task.sleep(for: .milliseconds(500)) }
         // Re-check after waiting: displays, settings or workspaces may have changed.
         guard !isBusy, let current = workspaceForLateApps(), current.id == ws.id else { return }
         var subset = current
@@ -696,14 +736,20 @@ final class AppModel {
     /// Settings › Restore › "If an app isn't open" is set to open them). Automatic restores
     /// never open apps.
     func appsToOpen(for plan: RestorePlan) -> [String] {
-        guard settings.appNotRunningPolicy == .openFirst else { return [] }
-        return plan.missingApps.filter { AppLauncher.isInstalled($0) }
+        var seen = Set<String>()
+        return windowsFromAppsToOpen(for: plan).compactMap { seen.insert($0.saved.bundleID).inserted ? $0.saved.bundleID : nil }
     }
 
     /// Saved windows that will appear once `appsToOpen` are opened.
+    /// Only windows that will have somewhere to go: their display is connected, or the
+    /// missing-display setting moves them to the main display.
     func windowsFromAppsToOpen(for plan: RestorePlan) -> [PlanItem] {
-        let apps = Set(appsToOpen(for: plan))
-        return plan.skipped.filter { $0.skipReason == .appNotRunning && apps.contains($0.saved.bundleID) }
+        guard settings.appNotRunningPolicy == .openFirst else { return [] }
+        let missingGoToMain = settings.missingDisplayPolicy == .useMainDisplay && !displays.isEmpty
+        return plan.skipped.filter { item in
+            item.skipReason == .appNotRunning && AppLauncher.isInstalled(item.saved.bundleID)
+                && (plan.displayMatch.mapping[item.saved.displayID] != nil || missingGoToMain)
+        }
     }
 
     /// Whether "Open & Place" makes sense for a skipped window: the app isn't running, or
@@ -769,7 +815,7 @@ protocol Presenter: AnyObject {
     func showPreview(_ workspace: Workspace)
     /// Explains a read-only workspace file and offers to convert it.
     func reviewStoreIssue()
-    func notifyMatch(workspace: Workspace, moves: Int)
+    func notifyMatch(workspace: Workspace, moves: Int, appsToOpen: Int)
     func notifyNewSetup()
     func notifyUpdate(version: String, url: URL)
     func requestNotificationPermissionIfNeeded()

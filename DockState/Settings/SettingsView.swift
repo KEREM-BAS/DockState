@@ -31,6 +31,10 @@ struct SettingsView: View {
         }
         .frame(width: 520)
         .frame(minHeight: 300)
+        .environment(\.openURL, OpenURLAction { url in
+            actions.openExternal(url)
+            return .handled
+        })
         .fixedSize(horizontal: false, vertical: true)
     }
 }
@@ -121,7 +125,7 @@ private struct GeneralSettings: View {
             SettingsGroup {
                 LanguageRow()
                 SettingsRow(title: String(localized: "Keep DockState windows on top"),
-                            subtitle: String(localized: "Manage, Settings and Preview stay above other apps’ windows.")) {
+                            subtitle: String(localized: "DockState’s windows stay above other apps’ windows. Links open in front of them.")) {
                     Toggle(String(localized: "Keep DockState windows on top"), isOn: Binding(
                         get: { settings.keepWindowsOnTop },
                         set: { settings.keepWindowsOnTop = $0; actions.applyWindowLevels() }))
@@ -145,7 +149,7 @@ private struct GeneralSettings: View {
                 }
                 SettingsRow(title: updateStatus, showsDivider: false) {
                     if let update = actions.availableUpdate {
-                        Button(String(localized: "Download")) { NSWorkspace.shared.open(update.url) }
+                        Button(String(localized: "Download")) { actions.openExternal(update.url) }
                     } else {
                         Button(String(localized: "Check Now")) { actions.checkForUpdatesNow() }
                             .disabled(actions.isCheckingForUpdates)
