@@ -64,16 +64,19 @@ public struct WorkspaceStore: Sendable {
         }
         let version = header.schemaVersion ?? 0
 
+        if version > DockStateCore.schemaVersion {
+            // Written by a newer DockState: keep the original safe (once per content), load
+            // what this version understands, and never overwrite or move it unless the user
+            // explicitly converts — even when nothing can be decoded.
+            let backup = backupOnce(data: data, suffix: "schema\(version)", now: now)
+            let workspaces = (try? decoder.decode(StoreFile.self, from: data))?.workspaces ?? []
+            return StoreLoadResult(workspaces: workspaces, issue: .newerSchema(version: version, backupURL: backup), isReadOnly: true)
+        }
+
         do {
             let migrated = try Self.migrate(data: data, from: version)
             let file = try decoder.decode(StoreFile.self, from: migrated)
-            guard version > DockStateCore.schemaVersion else {
-                return StoreLoadResult(workspaces: file.workspaces, issue: nil)
-            }
-            // Written by a newer DockState: keep the original safe (once per content) and
-            // don't overwrite it unless the user explicitly converts.
-            let backup = backupOnce(data: data, suffix: "schema\(version)", now: now)
-            return StoreLoadResult(workspaces: file.workspaces, issue: .newerSchema(version: version, backupURL: backup), isReadOnly: true)
+            return StoreLoadResult(workspaces: file.workspaces, issue: nil)
         } catch {
             return corrupted(suffix: "corrupt", now: now)
         }

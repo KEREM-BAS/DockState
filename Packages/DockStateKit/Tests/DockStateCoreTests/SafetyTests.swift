@@ -252,7 +252,7 @@ struct HalfMover: WindowMoving {
         let b = Scenario.live("com.apple.Terminal", "b", Frame(x: 1300, y: 40, width: 500, height: 300), order: 1)
         var ws = WorkspaceCapture.capture(name: "x", displays: [Fixtures.lg], windows: [a, b], includeTitles: false)
         ws.windows[1].isExcluded = true
-        let keep = ws.liveIDsOfExcludedWindows(in: [a, b], runningBundleIDs: ["com.apple.Terminal"])
+        let keep = ws.liveIDsOfExcludedWindows(in: [a, b], currentDisplays: [Fixtures.lg], runningBundleIDs: ["com.apple.Terminal"])
         #expect(keep == [b.id])
         let updated = WorkspaceCapture.capture(name: "x", displays: [Fixtures.lg], windows: [a, b], includeTitles: false, markExcluded: keep)
         #expect(updated.windows.filter(\.isExcluded).count == 1)

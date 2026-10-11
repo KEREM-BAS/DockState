@@ -93,7 +93,14 @@ public enum DisplayMatcher {
             return DisplayMatch(mapping: [:], missing: saved.map(\.id), extra: current.map(\.id),
                                 quality: .none, isAmbiguous: false, score: 0)
         }
-        let so = origin(of: saved), co = origin(of: current)
+        // Compare positions relative to the displays that could be the same on both sides.
+        // Extra displays (an opened lid, Sidecar) must not shift the reference point, or
+        // identical monitors could be swapped.
+        let pairable = saved.map { s in current.map { c in pairScore(saved: s, current: c) != nil } }
+        let savedPairable = saved.indices.filter { i in pairable[i].contains(true) }.map { saved[$0] }
+        let currentPairable = current.indices.filter { j in saved.indices.contains { pairable[$0][j] } }.map { current[$0] }
+        let so = origin(of: savedPairable.isEmpty ? saved : savedPairable)
+        let co = origin(of: currentPairable.isEmpty ? current : currentPairable)
         let scores: [[Double?]] = saved.map { s in
             current.map { c in pairScore(saved: s, current: c, savedOrigin: so, currentOrigin: co) }
         }
@@ -179,14 +186,17 @@ public enum WorkspaceRecognizer {
 
     /// All workspaces with their display match, best first.
     ///
-    /// Several workspaces can be saved for the same desk. Among equally good matches the
-    /// order is: a workspace set to "Always restore", then the one restored most recently,
+    /// Better quality wins, then the workspace covering more of the connected displays.
+    /// Several workspaces can be saved for the same desk. Among those the order is: a workspace set to "Always restore", then the one restored most recently,
     /// then the newest. Renaming or editing a workspace never changes which one wins.
     public static func rank(_ workspaces: [Workspace], current: [DisplayDescriptor]) -> [Candidate] {
         workspaces
             .map { Candidate(workspace: $0, match: DisplayMatcher.match(saved: $0.displays, current: current)) }
             .sorted { a, b in
                 if a.match.quality != b.match.quality { return a.match.quality > b.match.quality }
+                // A workspace describing more of the connected displays beats a subset of them.
+                if a.match.mapping.count != b.match.mapping.count { return a.match.mapping.count > b.match.mapping.count }
+                if a.match.extra.count != b.match.extra.count { return a.match.extra.count < b.match.extra.count }
                 let aAlways = a.workspace.autoMode == .always, bAlways = b.workspace.autoMode == .always
                 if aAlways != bAlways { return aAlways }
                 let ar = a.workspace.lastRestoredAt ?? .distantPast, br = b.workspace.lastRestoredAt ?? .distantPast

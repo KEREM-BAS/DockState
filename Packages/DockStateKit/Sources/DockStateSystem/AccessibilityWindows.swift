@@ -59,17 +59,23 @@ public final class AccessibilityWindowSystem: WindowMoving, @unchecked Sendable 
         var result: [LiveWindow] = []
         var fresh: [LiveWindowID: AXUIElement] = [:]
         var unreadableApps = 0
+        var readPIDs = Set<pid_t>()
         let known = lock.withLock { elements }
         for app in apps {
             let previous = known.filter { $0.key.pid == app.pid }
             let appElement = AXUIElementCreateApplication(app.pid)
             AXUIElementSetMessagingTimeout(appElement, readTimeout)
             guard let windows: [AXUIElement] = appElement.attribute(kAXWindowsAttribute) else { unreadableApps += 1; continue }
+            readPIDs.insert(app.pid)
             var order = 0
             for window in windows {
                 AXUIElementSetMessagingTimeout(window, readTimeout)
                 guard let position: CGPoint = window.pointAttribute(kAXPositionAttribute),
-                      let size: CGSize = window.sizeAttribute(kAXSizeAttribute) else { continue }
+                      let size: CGSize = window.sizeAttribute(kAXSizeAttribute) else {
+                    // Unreadable right now (busy app): keep its identity for undo, don't list it.
+                    if let existing = previous.first(where: { CFEqual($0.value, window) }) { fresh[existing.key] = window }
+                    continue
+                }
                 // Keep a window's identity across scans: some apps (e.g. Terminal) hand out
                 // element objects whose hash changes, but CFEqual still recognises them.
                 let id: LiveWindowID
@@ -102,11 +108,11 @@ public final class AccessibilityWindowSystem: WindowMoving, @unchecked Sendable 
             }
         }
         if unreadableApps > 0 { log.info("\(unreadableApps, privacy: .public) apps didn’t report windows to Accessibility") }
-        // Replace what we knew about the scanned apps (closed windows drop out); keep
-        // other running apps' elements so undo works across partial rescans.
-        let scanned = Set(apps.map(\.pid))
+        // Replace what we knew about apps that answered (closed windows drop out). Apps
+        // that didn't answer this time (busy, timed out) keep their windows' identities so
+        // undo still works; so do apps that weren't part of this scan.
         lock.withLock {
-            elements = elements.filter { !scanned.contains($0.key.pid) }.merging(fresh) { _, new in new }
+            elements = elements.filter { !readPIDs.contains($0.key.pid) }.merging(fresh) { _, new in new }
         }
         return result
     }

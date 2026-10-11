@@ -30,6 +30,13 @@ public enum WorkspaceTransfer {
         var taken = Set(existing.map { $0.name.lowercased() })
         for var ws in imported {
             ws.id = UUID()
+            // A restore on another Mac says nothing about this one, and an imported copy must
+            // not take over automatic restores from a workspace the user already has here.
+            ws.lastRestoredAt = nil
+            if ws.autoMode == .always,
+               existing.contains(where: { DisplayMatcher.match(saved: ws.displays, current: $0.displays).quality.isRecognized }) {
+                ws.autoMode = .ask
+            }
             ws.windows = ws.windows.map { var w = $0; w.id = UUID(); return w }
             if !includeTitles { ws = ws.strippingTitles() }
             var name = ws.name

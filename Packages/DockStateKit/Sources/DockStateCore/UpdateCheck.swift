@@ -11,14 +11,18 @@ public struct AppVersion: Comparable, Sendable, CustomStringConvertible {
     public init?(_ string: String) {
         var s = string.trimmingCharacters(in: .whitespaces)
         if s.hasPrefix("v") || s.hasPrefix("V") { s.removeFirst() }
-        let mainAndPre = s.split(separator: "-", maxSplits: 1).map(String.init)
-        let core = mainAndPre[0].split(separator: "+")[0].split(separator: ".").map { Int($0) }
+        let mainAndPre = s.split(separator: "-", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+        guard let head = mainAndPre.first, let coreText = head.split(separator: "+").first else { return nil }
+        let core = coreText.split(separator: ".", omittingEmptySubsequences: false).map { Int($0) }
         guard !core.isEmpty, core.count <= 3, core.allSatisfy({ $0 != nil }) else { return nil }
         let numbers = core.map { $0! } + Array(repeating: 0, count: 3 - core.count)
         major = numbers[0]; minor = numbers[1]; patch = numbers[2]
-        prerelease = mainAndPre.count > 1
-            ? mainAndPre[1].split(separator: "+")[0].split(separator: ".").map(String.init)
-            : []
+        if mainAndPre.count > 1 {
+            guard let pre = mainAndPre[1].split(separator: "+").first, !pre.isEmpty else { return nil }
+            prerelease = pre.split(separator: ".").map(String.init)
+        } else {
+            prerelease = []
+        }
     }
 
     public var description: String {
@@ -67,11 +71,15 @@ public struct ReleaseInfo: Decodable, Sendable, Equatable {
 public enum UpdateCheck {
     /// The newest published release that is newer than `current`, if any.
     /// Pre-releases count (unsigned builds are published as pre-releases); drafts don't.
+    ///
+    /// Someone on a stable version is only offered stable versions; someone already on a
+    /// pre-release (a beta) is offered both.
     public static func newerRelease(than current: AppVersion, in releases: [ReleaseInfo]) -> (ReleaseInfo, AppVersion)? {
         releases
             .filter { !$0.draft }
             .compactMap { r in AppVersion(r.tagName).map { (r, $0) } }
             .filter { $0.1 > current }
+            .filter { current.prerelease.isEmpty ? $0.1.prerelease.isEmpty : true }
             .max { $0.1 < $1.1 }
     }
 
@@ -81,12 +89,14 @@ public enum UpdateCheck {
 
     /// Reads GitHub's `releases.atom` feed. Unlike the REST API it has no anonymous rate
     /// limit (shared VPN addresses hit that quickly). Drafts never appear in the feed.
-    public static func decodeAtomReleases(_ data: Data) -> [ReleaseInfo] {
+    /// Returns nil when the data isn't an Atom feed (e.g. a captive-portal page), so that is
+    /// never mistaken for "no newer version".
+    public static func decodeAtomReleases(_ data: Data) -> [ReleaseInfo]? {
         let parser = XMLParser(data: data)
         let reader = AtomReader()
         parser.delegate = reader
         parser.shouldProcessNamespaces = false
-        guard parser.parse() else { return [] }
+        guard parser.parse(), reader.isFeed else { return nil }
         return reader.links.compactMap { href in
             guard let url = URL(string: href), url.host == "github.com",
                   url.pathComponents.count >= 2, url.pathComponents[url.pathComponents.count - 2] == "tag" else { return nil }
@@ -98,10 +108,13 @@ public enum UpdateCheck {
 /// Collects the alternate link of every <entry>.
 private final class AtomReader: NSObject, XMLParserDelegate {
     var links: [String] = []
+    var isFeed = false
     private var inEntry = false
+    private var sawRoot = false
 
     func parser(_ parser: XMLParser, didStartElement element: String, namespaceURI: String?,
                 qualifiedName: String?, attributes: [String: String] = [:]) {
+        if !sawRoot { sawRoot = true; isFeed = element == "feed" }
         if element == "entry" { inEntry = true }
         if inEntry, element == "link", attributes["rel"] ?? "alternate" == "alternate", let href = attributes["href"] {
             links.append(href)
