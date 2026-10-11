@@ -5,7 +5,7 @@ Reliability lives in a pure-Swift core that is unit-tested; the parts that touch
 
 ```
 ┌──────────────────────── DockState.app (UI) ────────────────────────┐
-│ MenuBarExtra popover · Onboarding · Preview · Result card · Manage │
+│ Status item + panel · Onboarding · Preview · Result card · Manage  │
 │ Settings · Notifications · Shortcuts · Login item · Update check   │
 │                AppModel (@MainActor, @Observable)                  │
 └───────────────┬─────────────────────────────────┬──────────────────┘
@@ -41,6 +41,10 @@ If a display's size changed, the frame is mapped proportionally onto its usable 
 **Decisions are pure functions.** What to do after displays settle (`AutoRestorePolicy`), whether an app opened
 later may be placed (`LatePlacementPolicy`), which workspace wins (`WorkspaceRecognizer`), what a restore
 will do (`RestorePlanner`) — all live in the core with tests. `AppModel` only gathers inputs and acts.
+
+**Menu bar and windows.** The menu bar icon is an AppKit `NSStatusItem` with a borderless panel (SwiftUI's
+`MenuBarExtra` can't handle right-click or be closed programmatically). `WindowRouter` opens DockState's
+windows; while any is open the app is `.regular` (Dock, Cmd+Tab) and otherwise an `.accessory` agent.
 
 ## Display recognition
 

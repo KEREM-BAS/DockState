@@ -60,10 +60,11 @@ Nothing moves without you saying so.
 - **Recognizes your desk, not just "2 displays"** — monitors are identified by EDID vendor/model/serial, display UUID and arrangement, so a monitor on a different port or a changed resolution is still *your* monitor, and two identical monitors are told apart by position. An extra display (Sidecar, a projector, opening the lid) doesn't stop your desk from being recognized.
 - **Preview before anything moves** — a Now / After map plus exact lists: *will move*, *already in place*, *won't restore (and why)*.
 - **Undo** — puts every window back where it was before the restore. Windows you've moved since are left alone.
-- **Partial failures are fine** — an app that isn't open or a window that was closed is reported with a reason (and an *Open & Place* button), and never stops the rest.
+- **Opens what's missing** — restoring a workspace opens apps that aren't running and puts their windows in place (restores you start yourself; automatic ones never launch apps).
+- **Partial failures are fine** — a window that was closed or an app that can't be opened is reported with a reason, and never stops the rest.
 - **You choose the automation** — per workspace: *Ask me* (notification, default), *Always restore*, or *Do nothing*. Automatic restores happen only when the display setup actually changes — never on a plain wake or unlock.
 - **Apps you open later** — after you restore a workspace, an app you open afterwards (Slack ten minutes later) goes to its saved place too. With its own Undo.
-- **Menu bar first** — stays out of the way; the icon shows a dot when windows are out of place and a badge when permission is missing.
+- **Menu bar first** — stays out of the way; left- or right-click the icon. It shows a dot when windows are out of place and a badge when permission is missing. While a DockState window is open it's also in the Dock and Cmd+Tab, and its windows stay on top (Settings › General) so they don't get lost behind the apps you're arranging.
 - **Keyboard shortcuts, if you want them** — save, restore matching workspace, undo. Off by default (global shortcuts take over the same keys in every app); record your own in Settings.
 - **English and Türkçe**, with an in-app language switch. More languages welcome.
 
@@ -94,7 +95,7 @@ DockState uses only public Apple APIs — no private frameworks, no SIP changes.
 | --- | --- |
 | Normal windows on the current Space | ✅ Saved and restored |
 | Several windows of one app | ✅ Matched by title, size, display and order; if two windows can't be told apart, DockState **skips them rather than guess** |
-| App not running | ⏭️ Reported; *Open & Place* launches it and places its window (or set *Open it first* for manual restores) |
+| App not running | ✅ Opened and placed when you restore (Settings › Restore › *If an app isn't open*); automatic restores report it instead |
 | App opened after a restore | ✅ Placed automatically (Settings › Restore › *Place apps you open later*) |
 | Window closed since saving | ⏭️ Reported as closed |
 | Minimized windows | ⏭️ Left minimized and reported |

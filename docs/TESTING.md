@@ -2,7 +2,7 @@
 
 ## Automated (CI, no permissions needed)
 
-`cd Packages/DockStateKit && swift test` runs the Swift Testing suite (94 tests):
+`cd Packages/DockStateKit && swift test` runs the Swift Testing suite (96 tests):
 
 | Area | Covered |
 | --- | --- |
@@ -42,7 +42,9 @@ so the test never touches your own apps. Using a throw-away store, the self-test
 3. undoes and checks the window went back;
 4. checks an excluded window is never planned for a move;
 5. relaunches the app right after Undo and checks it is **not** placed (consent withdrawn);
-6. restores again, relaunches, and checks the window **is** placed.
+6. restores again, relaunches, and checks the window **is** placed;
+7. moves the window away, quits the app, restores, and checks DockState **opened the app and placed its
+   window**, and that the result reports the opened app.
 
 `-DockStateSelfTestApp` can target another app (e.g. `com.apple.TextEdit`); steps 5–6 are skipped unless that
 app's only window is the given `-DockStateSelfTestFile` document.
@@ -50,7 +52,7 @@ app's only window is the given `-DockStateSelfTestFile` document.
 ## Demo mode (Debug builds)
 
 `-DockStateDemo YES` replaces live data with a fictional three-display desk (no real windows are read or
-moved, nothing is saved). Combine with `-DockStateOpen popover|preview|result|manage|permission|firstSave|settings|icons`
+moved, nothing is saved, no apps are launched). Combine with `-DockStateOpen menubar|popover|preview|result|manage|permission|firstSave|settings|icons`
 to open a screen directly, `-DockStateTab general|restore|shortcuts|about` for Settings,
 `-DockStateDemoArranged YES` for an arranged desk with nothing saved, and `-AppleLanguages "(tr)"` for Turkish.
 All README screenshots are made this way, so no real window titles end up in the repository. Check new UI in
@@ -86,4 +88,7 @@ to display handling, matching or restore.
 - [ ] Corrupt `workspaces.json` by hand → alert, backup kept, app starts empty
 - [ ] Update check: off by default; *Check Now* → "up to date" or the new version
 - [ ] Language switch English ↔ Türkçe; light and dark mode
-- [ ] Clicking the real menu bar icon: popover opens, and closes after choosing an action
+- [ ] Left- and right-click the real menu bar icon: the panel opens; Esc, an outside click or another click closes it
+- [ ] With Manage open: DockState is in the Dock and Cmd+Tab; after closing it, it isn't, and focus returns to the previous app
+- [ ] Keep on top: Manage stays above other apps; turning it off in Settings applies immediately; a GitHub link opens in front
+- [ ] Restore with an app quit (e.g. VS Code): it opens and its window is placed; with *Skip it* it's only reported
