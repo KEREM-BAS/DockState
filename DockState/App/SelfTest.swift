@@ -5,7 +5,7 @@ import DockStateSystem
 
 /// End-to-end check against real windows, for development only:
 ///
-///     open -a build/DerivedData/Build/Products/Debug/DockStateDev.app --args -DockStateSelfTest /tmp/dockstate-selftest.txt [-DockStateSelfTestApp com.apple.TextEdit]
+///     open -n -a "$PWD/build/DerivedData/Build/Products/Debug/DockStateDev.app" --args -DockStateSelfTest /tmp/dockstate-selftest.txt [-DockStateSelfTestApp com.apple.TextEdit]
 ///
 /// Saves the target app's window, moves it away, restores, verifies, undoes, verifies.
 /// Uses a throw-away store so real workspaces are never touched.

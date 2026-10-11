@@ -21,14 +21,27 @@ final class AppUpdater: NSObject {
     private var revision = 0
     private(set) var isStarted = false
     private(set) var canCheck = false
+    /// Whether Sparkle may ask its one-time question when it starts (not while the
+    /// permission step is on screen at launch).
+    @ObservationIgnored private var mayAsk = true
     /// A version found by a scheduled check, waiting for the user's attention (shown in the
     /// menu bar panel); nil once they look at it or the update session ends.
     private(set) var availableVersion: String?
     /// Posts and removes the "new version" notification (set by the app delegate).
     @ObservationIgnored var postNotification: ((String) -> Void)?
     @ObservationIgnored var removeNotification: (() -> Void)?
+    /// Opens links (Version History) in front of DockState's on-top windows.
+    @ObservationIgnored var openLink: ((URL) -> Void)?
+
+    /// Pre-release builds (1.2.0-beta.1) aren't updated: the feed only offers stable
+    /// releases, which Sparkle would order by build number, not by version.
+    static let isPrerelease = (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "").contains("-")
 
     override init() {
+        // Sparkle's requests are DockState's only network access. GitHub sets a long-lived
+        // tracking cookie on them; never store or send it, so checks can't be linked.
+        HTTPCookieStorage.shared.cookieAcceptPolicy = .never
+        HTTPCookieStorage.shared.removeCookies(since: .distantPast)
         super.init()
         controller = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: self)
         canCheckObservation = updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] updater, _ in
@@ -64,14 +77,18 @@ final class AppUpdater: NSObject {
         return updater.lastUpdateCheckDate
     }
 
-    /// Starts Sparkle once DockState is set up (it may ask whether to check automatically,
-    /// so not during onboarding). Safe to call more than once.
-    func start() {
+    /// Starts Sparkle once DockState is set up. With `mayAsk`, Sparkle asks its one-time
+    /// "check automatically?" question now if it hasn't yet; otherwise on a later launch.
+    /// Safe to call more than once.
+    func start(mayAsk: Bool = true) {
         guard !isStarted else { return }
         #if DEBUG || UPDATE_TEST
         // Development builds aren't released; only the update test starts the updater.
         guard UpdateTest.isRequested else { return }
+        #else
+        guard !Self.isPrerelease else { return }
         #endif
+        self.mayAsk = mayAsk
         migrateLegacySetting()
         do {
             try updater.start()
@@ -82,7 +99,9 @@ final class AppUpdater: NSObject {
         }
         revision += 1
         #if DEBUG || UPDATE_TEST
-        if UpdateTest.isRequested { UpdateTest.begin(updater) }
+        if UpdateTest.isRequested {
+            if UpdateTest.showsWindows { controller.checkForUpdates(nil) } else { UpdateTest.begin(updater) }
+        }
         #endif
     }
 
@@ -116,7 +135,7 @@ extension AppUpdater: SPUUpdaterDelegate {
     /// The updater starts only after onboarding, so the one-time question comes right
     /// after setup instead of on the second launch.
     func updaterShouldPromptForPermissionToCheck(forUpdates updater: SPUUpdater) -> Bool {
-        true
+        mayAsk
     }
 
     func updater(_ updater: SPUUpdater, willScheduleUpdateCheckAfterDelay delay: TimeInterval) {
@@ -135,7 +154,15 @@ extension AppUpdater: SPUUpdaterDelegate {
     }
 
     func updater(_ updater: SPUUpdater, didAbortWithError error: any Error) {
-        log.error("Update aborted: \(error.localizedDescription, privacy: .public)")
+        let error = error as NSError
+        // "You're up to date" and a cancelled install also end here; they aren't failures.
+        let expected = error.domain == SUSparkleErrorDomain
+            && [SUError.noUpdateError.rawValue, SUError.installationCanceledError.rawValue].contains(OSStatus(error.code))
+        if expected {
+            log.info("Update session ended: \(error.localizedDescription, privacy: .public)")
+        } else {
+            log.error("Update aborted: \(error.localizedDescription, privacy: .public)")
+        }
         #if DEBUG || UPDATE_TEST
         UpdateTest.record("aborted: \(error.localizedDescription)")
         #endif
@@ -145,6 +172,12 @@ extension AppUpdater: SPUUpdaterDelegate {
                  immediateInstallationBlock immediateInstallHandler: @escaping () -> Void) -> Bool {
         #if DEBUG || UPDATE_TEST
         if UpdateTest.isRequested {
+            if UpdateTest.quitsToInstall {
+                // Sparkle installs it as the app quits, without relaunching.
+                UpdateTest.record("quitting to install \(item.displayVersionString)")
+                DispatchQueue.main.async { NSApp.terminate(nil) }
+                return false
+            }
             UpdateTest.record("installing \(item.displayVersionString)")
             immediateInstallHandler()
             return true
@@ -196,6 +229,12 @@ extension AppUpdater: @preconcurrency SPUStandardUserDriverDelegate {
         removeNotification?()
         revision += 1
     }
+
+    /// "Version History" opens the release page like DockState's other links: in front of
+    /// its on-top windows.
+    func standardUserDriverShowVersionHistory(for item: SUAppcastItem) {
+        if let url = item.fullReleaseNotesURL ?? item.releaseNotesURL { openLink?(url) }
+    }
 }
 
 #if DEBUG || UPDATE_TEST
@@ -203,9 +242,14 @@ extension AppUpdater: @preconcurrency SPUStandardUserDriverDelegate {
 /// starts the updater in a development build, checks right away and installs a found
 /// update immediately, writing each step to the log file. Pass the feed with
 /// `-SUFeedURL <url> -SUEnableAutomaticChecks YES -SUAutomaticallyUpdate YES`.
+/// `-DockStateUpdateTestQuit YES` quits instead, so Sparkle installs without relaunching.
 @MainActor
 enum UpdateTest {
     static var isRequested: Bool { UserDefaults.standard.bool(forKey: "DockStateUpdateTest") }
+    static var quitsToInstall: Bool { UserDefaults.standard.bool(forKey: "DockStateUpdateTestQuit") }
+    /// `-DockStateUpdateTestWindows YES`: the whole app, and a user-initiated check with
+    /// Sparkle's windows (checks of window levels and the Dock).
+    static var showsWindows: Bool { isRequested && UserDefaults.standard.bool(forKey: "DockStateUpdateTestWindows") }
 
     static func begin(_ updater: SPUUpdater) {
         record("started \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")")

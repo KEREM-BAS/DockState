@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Only for ad-hoc ("Sign to Run Locally") builds: they have no team ID, so the hardened
+	     runtime's library validation would refuse Sparkle.framework. Developer ID builds
+	     don't carry this (see Config/Signing.xcconfig and scripts/build-release.sh). -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>

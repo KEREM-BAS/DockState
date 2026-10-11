@@ -8,16 +8,19 @@
 //
 //     DEVELOPMENT_TEAM = ABCDE12345
 //     CODE_SIGN_IDENTITY = Apple Development
-//     ENABLE_HARDENED_RUNTIME = YES
+//     CODE_SIGN_ENTITLEMENTS =
 //
 // Release builds are signed with Developer ID by CI (see docs/RELEASING.md).
 
 CODE_SIGN_STYLE = Automatic
 CODE_SIGN_IDENTITY = -
 DEVELOPMENT_TEAM =
-// The hardened runtime (required for notarization; scripts/build-release.sh turns it on
-// for Developer ID builds) only loads frameworks signed by the same team. Ad-hoc builds
-// have no team, so with it Sparkle.framework wouldn't load.
-ENABLE_HARDENED_RUNTIME = NO
+// The hardened runtime: notarization needs it, and it keeps other code (DYLD_INSERT_LIBRARIES)
+// out of a process the user trusts with Accessibility. (Xcode leaves it out of ad-hoc Debug
+// builds; scripts/build-release.sh always signs with it.) It only loads frameworks signed by
+// the same team; ad-hoc builds have no team, so they may load Sparkle.framework through this
+// entitlement. Builds signed with a team clear it.
+ENABLE_HARDENED_RUNTIME = YES
+CODE_SIGN_ENTITLEMENTS = Config/AdHoc.entitlements
 
 #include? "Signing.local.xcconfig"

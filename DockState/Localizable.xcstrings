@@ -2063,6 +2063,16 @@
         }
       }
     },
+    "Pre-release builds don’t update themselves": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ön sürümler kendini güncellemez"
+          }
+        }
+      }
+    },
     "Press to record a new shortcut": {
       "localizations": {
         "tr": {

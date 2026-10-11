@@ -146,13 +146,14 @@ private struct GeneralSettings: View {
                     Toggle(String(localized: "Check for updates automatically"), isOn: Binding(
                         get: { updater.automaticallyChecks }, set: { updater.automaticallyChecks = $0 }))
                         .toggleStyle(.switch).labelsHidden().controlSize(.small)
+                        .disabled(AppUpdater.isPrerelease)
                 }
                 SettingsRow(title: String(localized: "Download and install updates automatically"),
                             subtitle: String(localized: "Installs when you quit DockState or restart your Mac.")) {
                     Toggle(String(localized: "Download and install updates automatically"), isOn: Binding(
                         get: { updater.automaticallyDownloads }, set: { updater.automaticallyDownloads = $0 }))
                         .toggleStyle(.switch).labelsHidden().controlSize(.small)
-                        .disabled(!updater.automaticallyChecks)
+                        .disabled(!updater.automaticallyChecks || AppUpdater.isPrerelease)
                 }
                 SettingsRow(title: updateStatus, showsDivider: false) {
                     Button(String(localized: "Check Now")) { updater.checkNow() }
@@ -177,6 +178,7 @@ private struct GeneralSettings: View {
     private var updater: AppUpdater { actions.updater }
 
     private var updateStatus: String {
+        if AppUpdater.isPrerelease { return String(localized: "Pre-release builds don’t update themselves") }
         if let version = updater.availableVersion { return String(localized: "DockState \(version) is available") }
         if let last = updater.lastCheck {
             return String(localized: "Last checked \(last.formatted(.relative(presentation: .named)))")

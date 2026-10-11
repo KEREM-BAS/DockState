@@ -30,7 +30,7 @@ one never affects an installed DockState. Grant Accessibility to `DockStateDev.a
 ```bash
 scripts/make-test-window-app.sh
 open build/DockStateTestWindow.app
-open -a build/DerivedData/Build/Products/Debug/DockStateDev.app --args \
+open -n -a "$PWD/build/DerivedData/Build/Products/Debug/DockStateDev.app" --args \
   -DockStateSelfTest /tmp/selftest.txt -DockStateSelfTestApp app.dockstate.testwindow \
   -DockStateSelfTestFile "$PWD/build/DockStateTestWindow.app"
 cat /tmp/selftest.txt
