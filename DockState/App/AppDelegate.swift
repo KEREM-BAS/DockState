@@ -65,6 +65,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "result":
             model.loadDemoResult()
             showResult()
+        case "icons":
+            router.show("icons", title: "Menu bar icon", size: NSSize(width: 520, height: 150)) { MenuBarIconGallery() }
         case "preview":
             if let ws = model.recognized?.workspace ?? model.workspaces.first { actions.showPreview(ws) }
         default: return false
@@ -189,3 +191,29 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         }
     }
 }
+
+#if DEBUG
+/// The menu bar icon states, enlarged (screenshots and visual checks only).
+private struct MenuBarIconGallery: View {
+    private let states: [(MenuBarState, String)] = [
+        (.normal, String(localized: "All in place")),
+        (.outOfPlace(3), String(localized: "Windows out of place")),
+        (.needsPermission, String(localized: "Needs permission")),
+        (.restoring, String(localized: "Restoring")),
+    ]
+
+    var body: some View {
+        HStack(spacing: 28) {
+            ForEach(states.indices, id: \.self) { i in
+                VStack(spacing: 10) {
+                    Image(nsImage: MenuBarIcon.image(for: states[i].0, frame: 2))
+                        .resizable().interpolation(.high)
+                        .frame(width: 60, height: 48)
+                    Text(states[i].1).font(.system(size: 12)).foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(24)
+    }
+}
+#endif

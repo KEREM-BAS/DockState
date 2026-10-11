@@ -113,7 +113,10 @@ final class AppModel {
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.checkPermission() }
+            Task { @MainActor in
+                self?.checkPermission()
+                await self?.refreshIfStale()
+            }
         }
         Task { await refresh() }
     }
@@ -196,6 +199,18 @@ final class AppModel {
         liveWindows = await Task.detached(priority: .userInitiated) { system.windows(of: apps) }.value
     }
 
+    @ObservationIgnored private var lastBackgroundRefresh = Date.distantPast
+
+    /// Keeps the menu bar dot honest after the user moves windows by hand: when they switch
+    /// apps, rescan at most every 15 seconds, and only if a recognised workspace exists.
+    /// Nothing runs while the user is idle.
+    func refreshIfStale() async {
+        guard permissionGranted, !isBusy, recognized != nil,
+              Date().timeIntervalSince(lastBackgroundRefresh) > 15 else { return }
+        lastBackgroundRefresh = Date()
+        await refresh()
+    }
+
     var capturableWindows: [LiveWindow] {
         WorkspaceCapture.capturable(liveWindows, displays: displays)
     }
@@ -225,8 +240,13 @@ final class AppModel {
         return plan(for: candidate.workspace).moves.count
     }
 
-    var needsAttention: Bool {
-        (settings.hasCompletedOnboarding && !permissionGranted) || outOfPlaceCount > 0
+    var needsAttention: Bool { menuBarState != .normal && menuBarState != .restoring }
+
+    var menuBarState: MenuBarState {
+        if isBusy { return .restoring }
+        if settings.hasCompletedOnboarding && !permissionGranted { return .needsPermission }
+        let n = outOfPlaceCount
+        return n > 0 ? .outOfPlace(n) : .normal
     }
 
     /// Runs once displays have been stable for a moment after a change or wake.

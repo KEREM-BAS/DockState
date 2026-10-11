@@ -67,29 +67,70 @@ struct DockStateMark: View {
 }
 
 /// Builds the menu bar icon; drawn in code so it stays crisp and template-tinted.
+/// What the menu bar icon tells the user at a glance.
+enum MenuBarState: Equatable {
+    case normal
+    /// The recognised workspace has windows out of place.
+    case outOfPlace(Int)
+    /// Accessibility permission is missing.
+    case needsPermission
+    /// A restore or undo is running.
+    case restoring
+}
+
+/// Builds the menu bar icon; drawn in code so it stays crisp and template-tinted.
 enum MenuBarIcon {
-    static func image(badge: Bool) -> NSImage {
+    /// Frames of the "restoring" animation: the small window slides into place.
+    static let restoringFrames = 6
+
+    static func image(for state: MenuBarState, frame: Int = 0) -> NSImage {
         let size = NSSize(width: 20, height: 16)
         let image = NSImage(size: size, flipped: true) { _ in
             NSColor.black.setStroke()
             let back = NSBezierPath(roundedRect: NSRect(x: 2, y: 3.5, width: 10, height: 8), xRadius: 1.5, yRadius: 1.5)
             back.lineWidth = 1.5
             back.stroke()
-            let front = NSRect(x: 9.5, y: 6.5, width: 7, height: 6)
+            var front = NSRect(x: 9.5, y: 6.5, width: 7, height: 6)
+            if state == .restoring {
+                // Slide in from the right and settle.
+                let t = Double(frame % restoringFrames) / Double(restoringFrames - 1)
+                front.origin.x += CGFloat(3 * (1 - t))
+            }
             NSGraphicsContext.current?.compositingOperation = .clear
             NSBezierPath(roundedRect: front.insetBy(dx: -1, dy: -1), xRadius: 2, yRadius: 2).fill()
             NSGraphicsContext.current?.compositingOperation = .sourceOver
             let frontPath = NSBezierPath(roundedRect: front, xRadius: 1.5, yRadius: 1.5)
             frontPath.lineWidth = 1.5
             frontPath.stroke()
-            if badge {
-                NSColor.black.setFill()
+            NSColor.black.setFill()
+            switch state {
+            case .outOfPlace:
+                // A dot: something to do.
                 NSBezierPath(ovalIn: NSRect(x: 15, y: 0.5, width: 5, height: 5)).fill()
+            case .needsPermission:
+                // An exclamation badge: DockState can't work until this is fixed.
+                let badge = NSRect(x: 13.5, y: 0, width: 6.5, height: 6.5)
+                NSBezierPath(ovalIn: badge).fill()
+                NSGraphicsContext.current?.compositingOperation = .clear
+                NSBezierPath(rect: NSRect(x: 16.25, y: 1.2, width: 1, height: 2.6)).fill()
+                NSBezierPath(rect: NSRect(x: 16.25, y: 4.3, width: 1, height: 1)).fill()
+                NSGraphicsContext.current?.compositingOperation = .sourceOver
+            case .normal, .restoring:
+                break
             }
             return true
         }
         image.isTemplate = true
-        image.accessibilityDescription = "DockState"
+        image.accessibilityDescription = accessibilityDescription(for: state)
         return image
+    }
+
+    static func accessibilityDescription(for state: MenuBarState) -> String {
+        switch state {
+        case .normal: "DockState"
+        case .outOfPlace(let n): String(localized: "DockState, \(n) windows out of place")
+        case .needsPermission: String(localized: "DockState, needs Accessibility permission")
+        case .restoring: String(localized: "DockState, restoring windows")
+        }
     }
 }
