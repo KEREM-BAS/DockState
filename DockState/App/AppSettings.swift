@@ -21,6 +21,8 @@ final class AppSettings {
     var useWindowTitles: Bool { didSet { defaults.set(useWindowTitles, forKey: Keys.titles) } }
     var missingDisplayPolicy: MissingDisplayPolicy { didSet { defaults.set(missingDisplayPolicy.rawValue, forKey: Keys.missing) } }
     var appNotRunningPolicy: AppNotRunningPolicy { didSet { defaults.set(appNotRunningPolicy.rawValue, forKey: Keys.notRunning) } }
+    /// Keep Manage, Settings, Preview and Save above other apps' windows.
+    var keepWindowsOnTop: Bool { didSet { defaults.set(keepWindowsOnTop, forKey: Keys.onTop) } }
     /// Opt-in: look for a newer release on GitHub at most once a day.
     var checkForUpdates: Bool { didSet { defaults.set(checkForUpdates, forKey: Keys.updates) } }
     var lastUpdateCheck: Date? { didSet { defaults.set(lastUpdateCheck, forKey: Keys.lastUpdateCheck) } }
@@ -37,7 +39,7 @@ final class AppSettings {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        defaults.register(defaults: [Keys.notify: true, Keys.titles: true, Keys.shortcuts: false, Keys.placeLate: true])
+        defaults.register(defaults: [Keys.notify: true, Keys.titles: true, Keys.shortcuts: false, Keys.placeLate: true, Keys.onTop: true])
         hasCompletedOnboarding = defaults.bool(forKey: Keys.onboarding)
         notifyOnConnect = defaults.bool(forKey: Keys.notify)
         useWindowTitles = defaults.bool(forKey: Keys.titles)
@@ -46,6 +48,7 @@ final class AppSettings {
         didPromptForAccessibility = defaults.bool(forKey: Keys.prompted)
         placeLateApps = defaults.bool(forKey: Keys.placeLate)
         checkForUpdates = defaults.bool(forKey: Keys.updates)
+        keepWindowsOnTop = defaults.bool(forKey: Keys.onTop)
         lastUpdateCheck = defaults.object(forKey: Keys.lastUpdateCheck) as? Date
         globalShortcutsEnabled = defaults.bool(forKey: Keys.shortcuts)
         if let data = defaults.data(forKey: Keys.shortcutCombos),
@@ -65,6 +68,7 @@ final class AppSettings {
         static let prompted = "didPromptForAccessibility"
         static let placeLate = "placeLateApps"
         static let updates = "checkForUpdates"
+        static let onTop = "keepWindowsOnTop"
         static let lastUpdateCheck = "lastUpdateCheck"
         static let shortcuts = "globalShortcutsEnabled"
         static let shortcutCombos = "shortcutCombos"

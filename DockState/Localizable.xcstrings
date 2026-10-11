@@ -1405,6 +1405,16 @@
         }
       }
     },
+    "Keep DockState windows on top": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState pencerelerini en üstte tut"
+          }
+        }
+      }
+    },
     "Language": {
       "localizations": {
         "tr": {
@@ -1529,6 +1539,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Çalışma Alanlarını Yönet…"
+          }
+        }
+      }
+    },
+    "Manage, Settings and Preview stay above other apps’ windows.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yönetim, Ayarlar ve Önizleme pencereleri diğer uygulamaların pencerelerinin üstünde kalır."
           }
         }
       }

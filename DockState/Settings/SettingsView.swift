@@ -120,6 +120,13 @@ private struct GeneralSettings: View {
         VStack(spacing: 14) {
             SettingsGroup {
                 LanguageRow()
+                SettingsRow(title: String(localized: "Keep DockState windows on top"),
+                            subtitle: String(localized: "Manage, Settings and Preview stay above other apps’ windows.")) {
+                    Toggle(String(localized: "Keep DockState windows on top"), isOn: Binding(
+                        get: { settings.keepWindowsOnTop },
+                        set: { settings.keepWindowsOnTop = $0; actions.applyWindowLevels() }))
+                        .toggleStyle(.switch).labelsHidden().controlSize(.small)
+                }
                 SettingsRow(title: String(localized: "Open at login")) {
                     Toggle(String(localized: "Open at login"), isOn: Binding(get: { loginEnabled }, set: { actions.opensAtLogin = $0; loginEnabled = actions.opensAtLogin }))
                         .toggleStyle(.switch).labelsHidden().controlSize(.small)
