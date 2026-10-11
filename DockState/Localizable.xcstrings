@@ -426,6 +426,34 @@
         }
       }
     },
+    "All saved displays are connected, plus %lld other": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "All saved displays are connected, plus %lld other"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "All saved displays are connected, plus %lld others"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kayıtlı ekranların tümü bağlı, ayrıca %lld ekran daha var"
+          }
+        }
+      }
+    },
     "Allow Accessibility access to save and restore.": {
       "localizations": {
         "tr": {
@@ -586,6 +614,26 @@
         }
       }
     },
+    "Changes aren’t saved: the workspace file is from a newer DockState.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Değişiklikler kaydedilmedi: çalışma alanı dosyası daha yeni bir DockState sürümüne ait."
+          }
+        }
+      }
+    },
+    "Convert for This Version": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu Sürüme Dönüştür"
+          }
+        }
+      }
+    },
     "Copied": {
       "localizations": {
         "tr": {
@@ -726,12 +774,22 @@
         }
       }
     },
-    "DockState loaded what it could. A backup of the original file was kept at %@.": {
+    "DockState loaded what it could and won’t change the file unless you convert it.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "DockState yükleyebildiği kadarını yükledi. Özgün dosyanın bir yedeği şurada saklandı: %@."
+            "value": "DockState yükleyebildiği kadarını yükledi ve siz dönüştürmedikçe dosyayı değiştirmeyecek."
+          }
+        }
+      }
+    },
+    "DockState loaded what it could and won’t change the file unless you convert it. A backup was kept at %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState yükleyebildiği kadarını yükledi ve siz dönüştürmedikçe dosyayı değiştirmeyecek. Bir yedek şurada saklandı: %@."
           }
         }
       }
@@ -1778,6 +1836,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sistem (%@)"
+          }
+        }
+      }
+    },
+    "The file is damaged and DockState couldn’t make a backup, so it won’t overwrite it. Changes you make now aren’t saved.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosya hasarlı ve DockState yedek alamadı, bu yüzden dosyanın üzerine yazmayacak. Şimdi yaptığınız değişiklikler kaydedilmez."
           }
         }
       }

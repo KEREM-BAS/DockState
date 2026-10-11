@@ -24,7 +24,7 @@ enum Copy {
 
     static func connection(_ match: DisplayMatch) -> String {
         switch match.quality {
-        case .exact, .sameDisplays: String(localized: "connected")
+        case .exact, .sameDisplays, .withExtraDisplays: String(localized: "connected")
         case .partial: String(localized: "partly connected")
         case .none: String(localized: "not connected")
         }

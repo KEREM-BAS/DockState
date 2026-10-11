@@ -105,9 +105,12 @@ import Testing
         #expect(office == nil)
     }
 
-    @Test func prefersMostRecentlyUpdatedOnTie() {
-        let old = Workspace(name: "Old", displays: [Fixtures.macbook], windows: [], updatedAt: Date(timeIntervalSince1970: 0))
-        let new = Workspace(name: "New", displays: [Fixtures.macbook], windows: [], updatedAt: Date())
+    @Test func prefersNewestOnTieRegardlessOfEdits() {
+        // Editing (updatedAt) must not change which workspace wins; creation order does.
+        let old = Workspace(name: "Old", displays: [Fixtures.macbook], windows: [],
+                            createdAt: Date(timeIntervalSince1970: 0), updatedAt: Date())
+        let new = Workspace(name: "New", displays: [Fixtures.macbook], windows: [],
+                            createdAt: Date(timeIntervalSince1970: 100), updatedAt: Date(timeIntervalSince1970: 100))
         #expect(WorkspaceRecognizer.recognized([old, new], current: [Fixtures.macbook])?.workspace.name == "New")
     }
 }

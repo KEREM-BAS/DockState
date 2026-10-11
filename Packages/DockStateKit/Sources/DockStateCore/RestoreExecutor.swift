@@ -22,12 +22,15 @@ public struct UndoEntry: Sendable, Equatable {
     public var appName: String
     public var before: Frame
     public var after: Frame
+    /// Where the restore wanted the window (nil when the move failed part-way).
+    public var target: Frame?
 
-    public init(window: LiveWindowID, appName: String, before: Frame, after: Frame) {
+    public init(window: LiveWindowID, appName: String, before: Frame, after: Frame, target: Frame? = nil) {
         self.window = window
         self.appName = appName
         self.before = before
         self.after = after
+        self.target = target
     }
 }
 
@@ -80,6 +83,17 @@ public struct RestoreResult: Sendable, Equatable {
     }
 }
 
+public extension UndoRecord {
+    /// Frames this restore achieved, for `RestorePlanner.plan(settled:)`.
+    var settledPlacements: [LiveWindowID: SettledPlacement] {
+        var result: [LiveWindowID: SettledPlacement] = [:]
+        for entry in entries {
+            if let target = entry.target { result[entry.window] = SettledPlacement(target: target, actual: entry.after) }
+        }
+        return result
+    }
+}
+
 public struct UndoResult: Sendable, Equatable {
     public var restoredCount: Int
     /// The user moved these windows after the restore, so they were left alone.
@@ -98,9 +112,15 @@ public enum RestoreExecutor {
             switch await mover.setFrame(target, of: window.id) {
             case .success(let actual):
                 moved += 1
-                entries.append(UndoEntry(window: window.id, appName: window.appName, before: window.frame, after: actual))
+                entries.append(UndoEntry(window: window.id, appName: window.appName, before: window.frame, after: actual, target: target))
             case .failure(let error):
                 failures.append(.init(saved: item.saved, reason: error == .windowGone ? .windowNotFound : .moveFailed))
+                // A move can fail after the window was already resized or partly moved.
+                // Record that, so Undo can still put it back.
+                if error != .windowGone, let now = await mover.frame(of: window.id),
+                   !now.isApproximatelyEqual(to: window.frame, tolerance: 1) {
+                    entries.append(UndoEntry(window: window.id, appName: window.appName, before: window.frame, after: now))
+                }
             }
         }
         return RestoreResult(
@@ -112,9 +132,10 @@ public enum RestoreExecutor {
 
     /// Puts windows back where they were before the restore — but only windows that are
     /// still where the restore left them. Anything the user moved since is respected.
-    public static func undo(_ record: UndoRecord, mover: some WindowMoving, tolerance: Double = 4) async -> UndoResult {
+    public static func undo(_ record: UndoRecord, mover: some WindowMoving, tolerance: Double = PlacementTolerance.position) async -> UndoResult {
         var restored = 0, changed = 0, gone = 0
-        for entry in record.entries {
+        // Newest first, so a window moved twice returns through each step.
+        for entry in record.entries.reversed() {
             guard let current = await mover.frame(of: entry.window) else { gone += 1; continue }
             guard current.isApproximatelyEqual(to: entry.after, tolerance: tolerance) else { changed += 1; continue }
             switch await mover.setFrame(entry.before, of: entry.window) {

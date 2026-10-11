@@ -39,7 +39,8 @@ import Testing
         try Data("{ not json".utf8).write(to: url)
         let result = WorkspaceStore(fileURL: url).load()
         #expect(result.workspaces.isEmpty)
-        guard case .corrupted(let backup) = result.issue else { Issue.record("expected corrupted"); return }
+        guard case .corrupted(let backup?) = result.issue else { Issue.record("expected corrupted with backup"); return }
+        #expect(!result.isReadOnly)
         #expect(FileManager.default.fileExists(atPath: backup.path))
         #expect(!FileManager.default.fileExists(atPath: url.path))
         #expect(try String(contentsOf: backup, encoding: .utf8) == "{ not json")
@@ -68,8 +69,44 @@ import Testing
         let result = store.load()
         #expect(result.workspaces.count == 1)
         #expect(result.workspaces[0].autoMode == .ask)
-        guard case .newerSchema(99, let backup) = result.issue else { Issue.record("expected newerSchema"); return }
+        guard case .newerSchema(99, let backup?) = result.issue else { Issue.record("expected newerSchema"); return }
+        #expect(result.isReadOnly)
         #expect(FileManager.default.fileExists(atPath: backup.path))
+    }
+
+    @Test func newerSchemaIsBackedUpOnlyOncePerContent() throws {
+        let dir = Fixtures.tempDirectory()
+        let url = dir.appendingPathComponent("w.json")
+        try Data(#"{"schemaVersion":7,"workspaces":[]}"#.utf8).write(to: url)
+        let store = WorkspaceStore(fileURL: url)
+        _ = store.load(now: Date(timeIntervalSince1970: 1))
+        _ = store.load(now: Date(timeIntervalSince1970: 2))
+        _ = store.load(now: Date(timeIntervalSince1970: 3))
+        let backups = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.contains("schema7") }
+        #expect(backups.count == 1)
+        // The original is untouched.
+        #expect(try String(contentsOf: url, encoding: .utf8).contains("\"schemaVersion\":7"))
+    }
+
+    @Test func backupNamesNeverCollide() throws {
+        let dir = Fixtures.tempDirectory()
+        let url = dir.appendingPathComponent("w.json")
+        let store = WorkspaceStore(fileURL: url)
+        let now = Date(timeIntervalSince1970: 1000)
+        try Data("bad 1".utf8).write(to: url)
+        _ = store.load(now: now)
+        try Data("bad 2".utf8).write(to: url)
+        _ = store.load(now: now)
+        let backups = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.contains("corrupt") }
+        #expect(backups.count == 2)
+    }
+
+    @Test func lastRestoredAtRoundTrips() throws {
+        let store = WorkspaceStore(fileURL: Fixtures.tempDirectory().appendingPathComponent("w.json"))
+        var ws = sampleWorkspace()
+        ws.lastRestoredAt = Date(timeIntervalSince1970: 1_800_000_000)
+        try store.save([ws])
+        #expect(store.load().workspaces.first?.lastRestoredAt == ws.lastRestoredAt)
     }
 
     @Test func unversionedFileIsMigrated() throws {

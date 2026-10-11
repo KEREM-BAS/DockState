@@ -48,6 +48,18 @@ public struct Frame: Codable, Hashable, Sendable, CustomStringConvertible {
             && abs(width - other.width) <= tolerance && abs(height - other.height) <= tolerance
     }
 
+    /// Whether a window at `self` counts as being at `target`.
+    ///
+    /// Position must match closely; size is more lenient because many apps can't take
+    /// every size (minimum sizes, Terminal's character grid, fixed-size windows).
+    public func isPlacementEquivalent(to target: Frame) -> Bool {
+        let p = PlacementTolerance.self
+        let sizeTolerance: (Double) -> Double = { max(p.size, $0 * p.sizeFraction) }
+        return abs(x - target.x) <= p.position && abs(y - target.y) <= p.position
+            && abs(width - target.width) <= sizeTolerance(target.width)
+            && abs(height - target.height) <= sizeTolerance(target.height)
+    }
+
     /// Shrinks the frame to fit `bounds` and then moves it fully inside.
     public func clamped(into bounds: Frame) -> Frame {
         let w = min(width, bounds.width), h = min(height, bounds.height)
@@ -59,4 +71,15 @@ public struct Frame: Codable, Hashable, Sendable, CustomStringConvertible {
     public var description: String {
         "(\(Int(x.rounded())), \(Int(y.rounded())), \(Int(width.rounded()))×\(Int(height.rounded())))"
     }
+}
+
+/// Shared tolerances for "is this window where it should be", used by the planner and by
+/// the Accessibility mover's read-back so the two never disagree.
+public enum PlacementTolerance {
+    /// Points a window's origin may differ from its target.
+    public static let position: Double = 4
+    /// Minimum points a window's size may differ from its target.
+    public static let size: Double = 8
+    /// Fraction of the target size that may differ (whichever is larger).
+    public static let sizeFraction: Double = 0.03
 }

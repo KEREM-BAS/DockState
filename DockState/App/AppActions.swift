@@ -120,20 +120,34 @@ final class AppActions {
 
     func reportStoreIssue(_ issue: StoreLoadIssue) {
         let alert = NSAlert()
+        var backup: URL?
+        var offersConvert = false
         switch issue {
-        case .corrupted(let url):
+        case .corrupted(let url?):
+            backup = url
             alert.messageText = String(localized: "Saved workspaces couldn’t be read")
             alert.informativeText = String(localized: "The file was damaged, so DockState started fresh. A copy was kept at \(url.path).")
+        case .corrupted(nil):
+            alert.messageText = String(localized: "Saved workspaces couldn’t be read")
+            alert.informativeText = String(localized: "The file is damaged and DockState couldn’t make a backup, so it won’t overwrite it. Changes you make now aren’t saved.")
         case .newerSchema(_, let url):
+            backup = url
+            offersConvert = true
             alert.messageText = String(localized: "Workspaces were saved by a newer DockState")
-            alert.informativeText = String(localized: "DockState loaded what it could. A backup of the original file was kept at \(url.path).")
+            alert.informativeText = url.map { String(localized: "DockState loaded what it could and won’t change the file unless you convert it. A backup was kept at \($0.path).") }
+                ?? String(localized: "DockState loaded what it could and won’t change the file unless you convert it.")
         }
         alert.addButton(withTitle: String(localized: "OK"))
-        alert.addButton(withTitle: String(localized: "Show in Finder"))
+        if offersConvert { alert.addButton(withTitle: String(localized: "Convert for This Version")) }
+        if backup != nil { alert.addButton(withTitle: String(localized: "Show in Finder")) }
         NSApp.activate(ignoringOtherApps: true)
-        if alert.runModal() == .alertSecondButtonReturn {
-            if case .corrupted(let url) = issue { NSWorkspace.shared.activateFileViewerSelecting([url]) }
-            if case .newerSchema(_, let url) = issue { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+        let response = alert.runModal()
+        let convertButton: NSApplication.ModalResponse = .alertSecondButtonReturn
+        let finderButton: NSApplication.ModalResponse = offersConvert ? .alertThirdButtonReturn : .alertSecondButtonReturn
+        if offersConvert && response == convertButton {
+            model.convertStoreToCurrentVersion()
+        } else if response == finderButton, let backup {
+            NSWorkspace.shared.activateFileViewerSelecting([backup])
         }
     }
 
