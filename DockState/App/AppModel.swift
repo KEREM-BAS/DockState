@@ -16,7 +16,15 @@ final class AppModel {
     @ObservationIgnored private let store: WorkspaceStore?
     @ObservationIgnored private var displayObserver: DisplayChangeObserver?
     @ObservationIgnored private var permissionTimer: Timer?
-    @ObservationIgnored private var lastPromptedSetupKey: String?
+    /// The display setup DockState last reacted to. Wake, unlock or a moved Dock with the
+    /// same setup never trigger a suggestion or an automatic restore.
+    @ObservationIgnored private var lastHandledSetupKey: String?
+    /// Unknown setups DockState already suggested saving, so it doesn't nag.
+    @ObservationIgnored private var suggestedSetupKeys: Set<String> = []
+    /// Displays before the Mac went to sleep, to tell a half-woken desk from a new setup.
+    @ObservationIgnored private var displaysBeforeSleep: [DisplayDescriptor] = []
+    @ObservationIgnored private var lastWake: Date?
+    @ObservationIgnored private var refreshChain: Task<Void, Never>?
 
     private(set) var workspaces: [Workspace] = []
     private(set) var displays: [DisplayDescriptor] = []
@@ -78,6 +86,16 @@ final class AppModel {
     // MARK: - Lifecycle
 
     func start() {
+        // Displays connected at launch are not a change: never auto-restore at login or
+        // after DockState relaunches.
+        lastHandledSetupKey = displays.setupKey
+        let workspaceCenter = NSWorkspace.shared.notificationCenter
+        workspaceCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.displaysBeforeSleep = self?.displays ?? [] }
+        }
+        workspaceCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.lastWake = Date() }
+        }
         let observer = DisplayChangeObserver { [weak self] in
             Task { await self?.displaysDidSettle() }
         }
@@ -124,6 +142,7 @@ final class AppModel {
             // Permission was revoked: drop anything that references live windows.
             liveWindows = []
             undoRecord = nil
+            settled = [:]
         }
         Task { await refresh() }
     }
@@ -140,10 +159,22 @@ final class AppModel {
     // MARK: - Scanning
 
     /// Re-reads displays and windows. Window reads happen off the main thread.
+    ///
+    /// Refreshes run one after another, so a slow scan can never overwrite a newer one.
     func refresh() async {
         #if DEBUG
         if isDemo { return }
         #endif
+        let previous = refreshChain
+        let task = Task { @MainActor [weak self] in
+            await previous?.value
+            await self?.performRefresh()
+        }
+        refreshChain = task
+        await task.value
+    }
+
+    private func performRefresh() async {
         displays = SystemDisplays.current()
         runningApps = AccessibilityWindowSystem.runningApps()
         guard permissionGranted else { liveWindows = []; return }
@@ -185,31 +216,53 @@ final class AppModel {
     }
 
     /// Runs once displays have been stable for a moment after a change or wake.
-    func displaysDidSettle() async {
+    ///
+    /// Acts only when the display setup actually changed since the last time: a wake,
+    /// unlock or Dock change on the same desk never moves windows or posts a notification.
+    func displaysDidSettle(afterWakeRecheck: Bool = false) async {
         await refresh()
-        guard settings.hasCompletedOnboarding, permissionGranted else { return }
-        let key = displays.map(\.id).sorted().joined(separator: "|")
-
-        guard let candidate = recognized else {
-            // Unknown setup: suggest saving once per setup, never repeatedly.
-            if settings.notifyOnConnect, !workspaces.isEmpty, key != lastPromptedSetupKey {
-                lastPromptedSetupKey = key
-                presenter?.notifyNewSetup()
-            }
+        // External displays behind docks can appear seconds after wake. If fewer displays
+        // are back than before sleep, give them one more chance before treating the
+        // smaller setup as a change (which could trigger a pointless restore).
+        if !afterWakeRecheck, let wake = lastWake, Date().timeIntervalSince(wake) < 15,
+           displays.count < displaysBeforeSleep.count {
+            try? await Task.sleep(for: .seconds(5))
+            await displaysDidSettle(afterWakeRecheck: true)
             return
         }
-        let plan = plan(for: candidate.workspace)
-        guard !plan.moves.isEmpty else { return }
-        switch candidate.workspace.autoMode {
-        case .always:
-            await restore(candidate.workspace, automatic: true)
-        case .ask:
-            if settings.notifyOnConnect, key != lastPromptedSetupKey {
-                lastPromptedSetupKey = key
-                presenter?.notifyMatch(workspace: candidate.workspace, moves: plan.moves.count)
-            }
-        case .never:
+
+        let key = displays.setupKey
+        let changed = key != lastHandledSetupKey
+        lastHandledSetupKey = key
+        let candidate = recognized
+        let moves = candidate.map { plan(for: $0.workspace).moves.count } ?? 0
+        let action = AutoRestorePolicy.action(for: .init(
+            setupChanged: changed, onboardingCompleted: settings.hasCompletedOnboarding,
+            permissionGranted: permissionGranted, hasWorkspaces: !workspaces.isEmpty,
+            notifyOnConnect: settings.notifyOnConnect, alreadySuggested: suggestedSetupKeys.contains(key),
+            recognizedMode: candidate?.workspace.autoMode, outOfPlace: moves))
+        switch action {
+        case .none:
             break
+        case .suggestSaving:
+            suggestedSetupKeys.insert(key)
+            presenter?.notifyNewSetup()
+        case .notifyMatch(let moves):
+            if let ws = candidate?.workspace { presenter?.notifyMatch(workspace: ws, moves: moves) }
+        case .restoreAutomatically:
+            if let ws = candidate?.workspace { await restore(ws, automatic: true) }
+        }
+    }
+
+    /// The Restore button of a notification. If the displays changed since it was posted,
+    /// show the preview instead of restoring blindly.
+    func restoreFromNotification(workspaceID: UUID) async {
+        await refresh()
+        guard let ws = workspace(id: workspaceID) else { return }
+        if recognized?.workspace.id == workspaceID {
+            await restore(ws)
+        } else {
+            presenter?.showPreview(ws)
         }
     }
 
@@ -314,7 +367,7 @@ final class AppModel {
     private func markRestored(_ workspace: Workspace) {
         guard var ws = self.workspace(id: workspace.id) else { return }
         ws.lastRestoredAt = Date()
-        replace(ws, touch: false)
+        replace(ws, touch: false, quiet: true)
     }
 
     /// Removes stored titles from every workspace (used when title matching is turned off).
@@ -323,12 +376,12 @@ final class AppModel {
         persist()
     }
 
-    private func replace(_ workspace: Workspace, touch: Bool = true) {
+    private func replace(_ workspace: Workspace, touch: Bool = true, quiet: Bool = false) {
         guard let i = workspaces.firstIndex(where: { $0.id == workspace.id }) else { return }
         var ws = workspace
         if touch { ws.updatedAt = Date() }
         workspaces[i] = ws
-        persist()
+        persist(quiet: quiet)
     }
 
     /// Allows saving over a workspace file written by a newer DockState (a backup was kept).
@@ -337,10 +390,11 @@ final class AppModel {
         persist()
     }
 
-    private func persist() {
+    private func persist(quiet: Bool = false) {
         guard let store else { return }
         guard !storeIsReadOnly else {
             log.info("Not saving: workspace file is read-only")
+            if quiet { return }
             presenter?.toast(String(localized: "Changes aren’t saved: the workspace file is from a newer DockState."))
             return
         }
@@ -361,11 +415,15 @@ final class AppModel {
         await refresh()
         var plan = plan(for: workspace)
 
-        if settings.appNotRunningPolicy == .openFirst {
-            let missingApps = Set(plan.skipped.filter { $0.skipReason == .appNotRunning }.map(\.saved.bundleID))
-            if !missingApps.isEmpty {
-                for bundleID in missingApps { _ = await AppLauncher.launch(bundleID) }
-                await waitForWindows(of: missingApps)
+        // Apps are only launched when the user restores by hand — an automatic restore
+        // must never start apps the user had quit.
+        if !automatic, settings.appNotRunningPolicy == .openFirst {
+            let missing = plan.skipped.filter { $0.skipReason == .appNotRunning }.map(\.saved.bundleID)
+            if !missing.isEmpty {
+                var expected: [String: Int] = [:]
+                for bundleID in missing { expected[bundleID, default: 0] += 1 }
+                for bundleID in expected.keys { _ = await AppLauncher.launch(bundleID) }
+                await waitForWindows(expected)
                 plan = self.plan(for: workspace)
             }
         }
@@ -382,11 +440,15 @@ final class AppModel {
 
     /// Opens a missing app, waits for its window and places it as part of the last restore.
     func openAndPlace(bundleID: String, workspace: Workspace) async {
+        guard permissionGranted, !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
         guard await AppLauncher.launch(bundleID) else {
             presenter?.toast(String(localized: "Couldn’t open the app."))
             return
         }
-        await waitForWindows(of: [bundleID])
+        let expected = workspace.windows.filter { $0.bundleID == bundleID && !$0.isExcluded }.count
+        await waitForWindows([bundleID: max(1, expected)])
         var ws = workspace
         ws.windows = ws.windows.filter { $0.bundleID == bundleID }
         let plan = plan(for: ws)
@@ -402,19 +464,55 @@ final class AppModel {
             last.movedCount += result.movedCount
             last.notRestored.removeAll { $0.saved.bundleID == bundleID }
             last.notRestored += result.notRestored
+            // The card's Undo covers what was placed here too.
+            if let record = undoRecord, record.workspaceID == workspace.id { last.undo = record }
             lastResult = last
         }
         await refresh()
     }
 
-    private func waitForWindows(of bundleIDs: Set<String>, timeout: Duration = .seconds(8)) async {
+    /// Waits until each launched app shows its expected number of standard windows, or
+    /// its window count stops growing for a second (apps open restored windows one by
+    /// one), at most `timeout`. Only the launched apps are scanned while waiting.
+    private func waitForWindows(_ expected: [String: Int], timeout: Duration = .seconds(8)) async {
         let deadline = ContinuousClock.now + timeout
+        var lastCounts: [String: Int] = [:]
+        var stableSince = ContinuousClock.now
+        let system = windowSystem
         while ContinuousClock.now < deadline {
-            try? await Task.sleep(for: .milliseconds(500))
-            await refresh()
-            let ready = bundleIDs.allSatisfy { id in liveWindows.contains { $0.bundleID == id && $0.isStandard } }
-            if ready { try? await Task.sleep(for: .milliseconds(400)); await refresh(); return }
+            try? await Task.sleep(for: .milliseconds(400))
+            let apps = AccessibilityWindowSystem.runningApps().filter { expected[$0.bundleID] != nil }
+            let windows = await Task.detached(priority: .userInitiated) { system.windows(of: apps) }.value
+            var counts: [String: Int] = [:]
+            for w in windows where w.isStandard && !w.isMinimized { counts[w.bundleID, default: 0] += 1 }
+            if expected.allSatisfy({ counts[$0.key, default: 0] >= $0.value }) { break }
+            if counts != lastCounts {
+                lastCounts = counts
+                stableSince = ContinuousClock.now
+            } else if expected.keys.allSatisfy({ counts[$0, default: 0] > 0 }),
+                      ContinuousClock.now - stableSince >= .seconds(1) {
+                break
+            }
         }
+        try? await Task.sleep(for: .milliseconds(300))
+        await refresh()
+    }
+
+    /// Whether "Open & Place" makes sense for a skipped window: the app isn't running, or
+    /// it is running without any window (opening it again asks it for a new window).
+    func canOpenAndPlace(_ saved: SavedWindow, reason: SkipReason) -> Bool {
+        guard AppLauncher.isInstalled(saved.bundleID) else { return false }
+        switch reason {
+        case .appNotRunning: return true
+        case .windowNotFound: return !liveWindows.contains { $0.bundleID == saved.bundleID && $0.isStandard }
+        default: return false
+        }
+    }
+
+    /// Undo in the result card applies to that result only, never to an older restore.
+    var canUndoLastResult: Bool {
+        guard canUndo, let result = lastResult, !result.undo.entries.isEmpty else { return false }
+        return undoRecord?.workspaceID == result.workspaceID && undoRecord?.date == result.undo.date
     }
 
     var canUndo: Bool { undoRecord != nil && permissionGranted }
@@ -449,6 +547,7 @@ protocol Presenter: AnyObject {
     func showResult()
     func hideResult()
     func toast(_ message: String, actionTitle: String?, action: (@MainActor () -> Void)?)
+    func showPreview(_ workspace: Workspace)
     func notifyMatch(workspace: Workspace, moves: Int)
     func notifyNewSetup()
     func requestNotificationPermissionIfNeeded()

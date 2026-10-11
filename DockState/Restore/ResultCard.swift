@@ -36,13 +36,14 @@ struct ResultCard: View {
                                         .font(.system(size: 10.5)).foregroundStyle(.tertiary)
                                 }
                                 Spacer()
-                                if failure.reason == .appNotRunning, AppLauncher.isInstalled(failure.saved.bundleID),
+                                if model.canOpenAndPlace(failure.saved, reason: failure.reason),
                                    let ws = model.workspace(id: result.workspaceID) {
                                     Button(String(localized: "Open & Place")) {
                                         Task { await model.openAndPlace(bundleID: failure.saved.bundleID, workspace: ws) }
                                     }
                                     .buttonStyle(PanelButtonStyle())
                                     .fixedSize()
+                                    .disabled(model.isBusy)
                                 }
                             }
                             .padding(.horizontal, 10).padding(.vertical, 7)
@@ -58,7 +59,7 @@ struct ResultCard: View {
                 HStack(spacing: 6) {
                     Button { actions.undo() } label: { Text("Undo").frame(maxWidth: .infinity) }
                         .buttonStyle(PanelButtonStyle())
-                        .disabled(!model.canUndo)
+                        .disabled(!model.canUndoLastResult || model.isBusy)
                     Button { onClose() } label: { Text("Done").frame(maxWidth: .infinity) }
                         .buttonStyle(AccentButtonStyle())
                 }
