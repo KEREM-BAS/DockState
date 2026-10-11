@@ -1,0 +1,32 @@
+name: Bug report
+description: Something didn't restore, moved the wrong window, or misbehaved
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Saved "Home Desk" with 2 external monitors
+        2. Unplugged, slept the Mac, plugged back in
+        3. ...
+  - type: input
+    id: apps
+    attributes:
+      label: Apps involved (optional)
+      description: e.g. Safari, VS Code, Slack. Only share what you're comfortable with.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Settings › About › Copy Diagnostics, then paste here. It contains no window titles or app names.
+      render: text
+    validations:
+      required: true
