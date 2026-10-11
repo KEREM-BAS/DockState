@@ -436,4 +436,6 @@ enum AppIdentity {
 enum Links {
     static let repository = URL(string: "https://github.com/KEREM-BAS/DockState")!
     static let issues = URL(string: "https://github.com/KEREM-BAS/DockState/issues")!
+    /// Licenses of the code DockState includes (Sparkle), shipped in the app.
+    static let acknowledgements = Bundle.main.url(forResource: "Acknowledgements", withExtension: "txt")
 }

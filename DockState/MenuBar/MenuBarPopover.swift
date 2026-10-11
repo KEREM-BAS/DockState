@@ -35,6 +35,13 @@ struct MenuBarPopover: View {
             MenuRow(title: String(localized: "Undo Last Restore"), shortcut: shortcut(.undo),
                     enabled: model.canUndo) { actions.undo() }
             Divider().padding(.vertical, 5).padding(.horizontal, 10)
+            // A version found in the background waits here instead of popping up.
+            if let version = actions.updater.availableVersion {
+                MenuRow(title: String(localized: "Update to DockState \(version)…")) {
+                    closeMenuBarPopover()
+                    actions.updater.checkNow()
+                }
+            }
             MenuRow(title: String(localized: "Manage Workspaces…")) { actions.showManage() }
             MenuRow(title: String(localized: "Settings…"), shortcut: "⌘,") { actions.showSettings() }
                 .keyboardShortcut(",", modifiers: .command)

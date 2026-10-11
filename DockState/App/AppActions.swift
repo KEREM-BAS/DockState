@@ -19,16 +19,17 @@ final class AppActions {
     /// Applies "Keep DockState windows on top" to the windows already open.
     func applyWindowLevels() { router.applyLevels() }
 
+    /// Sparkle's windows and alerts float and keep DockState in Cmd+Tab like its own.
+    func adoptOtherWindows() { router.adoptOtherWindows() }
+
     /// Opens a link (GitHub, the release page) so the browser isn't hidden underneath
     /// DockState's on-top windows.
     func openExternal(_ url: URL) {
         router.lowerUntilReactivated()
         NSWorkspace.shared.open(url)
     }
-    @ObservationIgnored lazy var updateChecker = UpdateChecker(settings: model.settings)
-    /// Set when a newer release was found; shown in Settings › About.
-    var availableUpdate: (version: String, url: URL)?
-    var isCheckingForUpdates = false
+    /// In-app updates (Sparkle); started once onboarding is done.
+    @ObservationIgnored let updater = AppUpdater()
 
     /// Which workspace the Manage window shows.
     var manageSelection: UUID?
@@ -62,6 +63,13 @@ final class AppActions {
         router.close(WindowID.onboarding)
         // The launch skips the store alert during onboarding; show it once onboarding ends.
         if !wasCompleted, model.storeIsReadOnly, let issue = model.storeIssue { reportStoreIssue(issue) }
+        // Sparkle may ask (once) whether to check for updates: after setup, not during it.
+        if !updater.isStarted {
+            Task {
+                try? await Task.sleep(for: .seconds(2))
+                updater.start()
+            }
+        }
     }
 
     /// Asks for permission and remembers what to do once it's granted.
@@ -293,67 +301,6 @@ final class AppActions {
             model.convertStoreToCurrentVersion()
         } else if response == finderButton, let backup {
             NSWorkspace.shared.activateFileViewerSelecting([backup])
-        }
-    }
-
-    // MARK: Updates
-
-    /// Runs the daily check if the user turned it on. Results arrive as a notification and
-    /// in Settings. Called at launch, after wake and hourly; a failure is retried once.
-    func checkForUpdatesIfDue(isRetry: Bool = false) {
-        guard updateChecker.isDue else { return }
-        isCheckingForUpdates = true
-        Task {
-            let outcome = await updateChecker.check()
-            isCheckingForUpdates = updateChecker.isChecking
-            switch outcome {
-            case .available(let version, let url):
-                if availableUpdate?.version != version { model.presenter?.notifyUpdate(version: version, url: url) }
-                availableUpdate = (version, url)
-            case .upToDate:
-                availableUpdate = nil
-            case .failed:
-                // Often the network isn't back yet right after wake.
-                if !isRetry {
-                    try? await Task.sleep(for: .seconds(60))
-                    checkForUpdatesIfDue(isRetry: true)
-                }
-            }
-        }
-    }
-
-    /// Re-evaluates hourly whether the daily check is due (a Mac that never sleeps).
-    func startUpdateTimer() {
-        let timer = Timer(timeInterval: 3600, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.checkForUpdatesIfDue() }
-        }
-        timer.tolerance = 600
-        RunLoop.main.add(timer, forMode: .common)
-    }
-
-    /// "Check Now": always answers, even when there's nothing new.
-    func checkForUpdatesNow() {
-        isCheckingForUpdates = true
-        Task {
-            let outcome = await updateChecker.check()
-            isCheckingForUpdates = updateChecker.isChecking
-            switch outcome {
-            case .available(let version, let url):
-                availableUpdate = (version, url)
-                let alert = NSAlert()
-                alert.messageText = String(localized: "DockState \(version) is available")
-                alert.informativeText = String(localized: "You have \(UpdateChecker.currentVersion?.description ?? "?"). Download the new version from GitHub.")
-                alert.addButton(withTitle: String(localized: "Download"))
-                alert.addButton(withTitle: String(localized: "Later"))
-                NSApp.activate(ignoringOtherApps: true)
-                if alert.runModal() == .alertFirstButtonReturn { openExternal(url) }
-            case .upToDate:
-                availableUpdate = nil
-                model.presenter?.toast(String(localized: "DockState is up to date."))
-            case .failed:
-                showError(String(localized: "Couldn’t check for updates"),
-                          String(localized: "GitHub couldn’t be reached. Try again later."))
-            }
         }
     }
 

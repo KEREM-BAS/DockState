@@ -860,7 +860,6 @@ protocol Presenter: AnyObject {
     func reviewStoreIssue()
     func notifyMatch(workspace: Workspace, moves: Int, appsToOpen: Int)
     func notifyNewSetup()
-    func notifyUpdate(version: String, url: URL)
     func requestNotificationPermissionIfNeeded()
 }
 

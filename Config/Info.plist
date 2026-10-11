@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- In-app updates (Sparkle). Xcode merges this with the generated Info.plist. -->
+	<key>SUFeedURL</key>
+	<string>https://github.com/KEREM-BAS/DockState/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>eXEAE5JvxnSAtph0TQymY/H4Te6i0iOiVrZnWFm1gKk=</string>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
+</dict>
+</plist>

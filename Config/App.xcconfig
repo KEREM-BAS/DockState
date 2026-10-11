@@ -1,2 +1,5 @@
 #include "Signing.xcconfig"
 #include "Version.xcconfig"
+
+// Sparkle's keys (feed URL, public key); merged with the generated Info.plist.
+INFOPLIST_FILE = Config/Info.plist

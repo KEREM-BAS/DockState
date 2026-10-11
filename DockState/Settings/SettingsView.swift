@@ -142,18 +142,21 @@ private struct GeneralSettings: View {
             }
             SettingsGroup {
                 SettingsRow(title: String(localized: "Check for updates automatically"),
-                            subtitle: String(localized: "Once a day, DockState asks GitHub for the list of releases. Nothing else is sent.")) {
-                    Toggle(String(localized: "Check for updates automatically"), isOn: $settings.checkForUpdates)
+                            subtitle: String(localized: "Once a day, DockState checks GitHub for a new version. Nothing about you is sent.")) {
+                    Toggle(String(localized: "Check for updates automatically"), isOn: Binding(
+                        get: { updater.automaticallyChecks }, set: { updater.automaticallyChecks = $0 }))
                         .toggleStyle(.switch).labelsHidden().controlSize(.small)
-                        .onChange(of: settings.checkForUpdates) { _, on in if on { actions.checkForUpdatesIfDue() } }
+                }
+                SettingsRow(title: String(localized: "Download and install updates automatically"),
+                            subtitle: String(localized: "Installs when you quit DockState or restart your Mac.")) {
+                    Toggle(String(localized: "Download and install updates automatically"), isOn: Binding(
+                        get: { updater.automaticallyDownloads }, set: { updater.automaticallyDownloads = $0 }))
+                        .toggleStyle(.switch).labelsHidden().controlSize(.small)
+                        .disabled(!updater.automaticallyChecks)
                 }
                 SettingsRow(title: updateStatus, showsDivider: false) {
-                    if let update = actions.availableUpdate {
-                        Button(String(localized: "Download")) { actions.openExternal(update.url) }
-                    } else {
-                        Button(String(localized: "Check Now")) { actions.checkForUpdatesNow() }
-                            .disabled(actions.isCheckingForUpdates)
-                    }
+                    Button(String(localized: "Check Now")) { updater.checkNow() }
+                        .disabled(!updater.canCheck)
                 }
             }
             SettingsGroup {
@@ -171,10 +174,11 @@ private struct GeneralSettings: View {
         .onAppear { loginEnabled = actions.opensAtLogin }
     }
 
+    private var updater: AppUpdater { actions.updater }
+
     private var updateStatus: String {
-        if let update = actions.availableUpdate { return String(localized: "DockState \(update.version) is available") }
-        if actions.isCheckingForUpdates { return String(localized: "Checking for updates…") }
-        if let last = model.settings.lastUpdateCheck {
+        if let version = updater.availableVersion { return String(localized: "DockState \(version) is available") }
+        if let last = updater.lastCheck {
             return String(localized: "Last checked \(last.formatted(.relative(presentation: .named)))")
         }
         return String(localized: "Updates")
@@ -328,6 +332,9 @@ private struct AboutSettings: View {
             HStack(spacing: 14) {
                 Link(String(localized: "View on GitHub"), destination: Links.repository)
                 Link(String(localized: "Report an Issue"), destination: Links.issues)
+                if let acknowledgements = Links.acknowledgements {
+                    Link(String(localized: "Acknowledgements"), destination: acknowledgements)
+                }
             }
             .font(.system(size: 12))
             Button(copied ? String(localized: "Copied") : String(localized: "Copy Diagnostics")) {

@@ -22,3 +22,10 @@ Config/Signing.local.xcconfig
 # Release artefacts
 /dist/
 *.dmg
+
+# Signing material must never be committed (keep it outside the repo)
+*.p12
+*.p8
+*.cer
+*.certSigningRequest
+*.key
