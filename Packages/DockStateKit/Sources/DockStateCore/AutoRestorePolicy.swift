@@ -53,3 +53,18 @@ public enum AutoRestorePolicy {
         }
     }
 }
+
+/// Whether windows of an app opened after a restore may be placed automatically.
+public enum LatePlacementPolicy {
+    /// - Parameters:
+    ///   - restoredOnSetup: the display setup key the user last restored this workspace on.
+    ///   - currentSetup: the setup key now.
+    public static func allows(enabled: Bool, mode: AutoMode, restoredOnSetup: String?, currentSetup: String) -> Bool {
+        guard enabled else { return false }
+        switch mode {
+        case .never: return false
+        case .always: return true
+        case .ask: return restoredOnSetup == currentSetup
+        }
+    }
+}

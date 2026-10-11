@@ -423,6 +423,16 @@
         }
       }
     },
+    "After you restore a workspace, apps you open move to their saved place. Also for workspaces set to “Always restore”.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir çalışma alanını geri yükledikten sonra açtığınız uygulamalar kayıtlı yerlerine taşınır. “Her zaman geri yükle” ayarlı çalışma alanlarında da geçerlidir."
+          }
+        }
+      }
+    },
     "All %lld saved displays are connected": {
       "localizations": {
         "tr": {
@@ -1521,6 +1531,32 @@
           "stringUnit": {
             "state": "translated",
             "value": "İzin verildi — devam ediliyor…"
+          }
+        }
+      }
+    },
+    "Place apps you open later": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonradan açtığınız uygulamaları yerleştir"
+          }
+        }
+      }
+    },
+    "Placed %@ for “%@”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Placed %1$@ for “%2$@”"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, “%2$@” için yerleştirildi"
           }
         }
       }

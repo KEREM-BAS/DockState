@@ -25,6 +25,9 @@ final class AppModel {
     @ObservationIgnored private var displaysBeforeSleep: [DisplayDescriptor] = []
     @ObservationIgnored private var lastWake: Date?
     @ObservationIgnored private var refreshChain: Task<Void, Never>?
+    /// Workspaces the user restored, with the display setup it happened on. Their consent
+    /// to place late-opening apps lasts while that setup stays connected.
+    @ObservationIgnored private var restoredOnSetup: [UUID: String] = [:]
 
     private(set) var workspaces: [Workspace] = []
     private(set) var displays: [DisplayDescriptor] = []
@@ -95,6 +98,13 @@ final class AppModel {
         }
         workspaceCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.lastWake = Date() }
+        }
+        workspaceCenter.addObserver(forName: NSWorkspace.didLaunchApplicationNotification, object: nil, queue: .main) { [weak self] note in
+            let bundleID = (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.bundleIdentifier
+            Task { @MainActor in
+                guard let self, let bundleID else { return }
+                await self.placeLateApp(bundleID)
+            }
         }
         let observer = DisplayChangeObserver { [weak self] in
             Task { await self?.displaysDidSettle() }
@@ -502,6 +512,7 @@ final class AppModel {
         if !result.undo.entries.isEmpty { undoRecord = result.undo }
         settled.merge(result.undo.settledPlacements) { _, new in new }
         lastResult = result
+        restoredOnSetup[workspace.id] = displays.setupKey
         markRestored(workspace)
         await refresh()
         presenter?.showResult()
@@ -565,6 +576,42 @@ final class AppModel {
         }
         try? await Task.sleep(for: .milliseconds(300))
         await refresh()
+    }
+
+    /// The workspace whose windows should be placed when an app opens later, if any.
+    ///
+    /// Only for the recognised workspace, and only when the user agreed to have windows
+    /// moved: it is set to "Always restore", or they restored it on this display setup.
+    func workspaceForLateApps() -> Workspace? {
+        guard settings.hasCompletedOnboarding, permissionGranted, let ws = recognized?.workspace else { return nil }
+        let allowed = LatePlacementPolicy.allows(enabled: settings.placeLateApps, mode: ws.autoMode,
+                                                 restoredOnSetup: restoredOnSetup[ws.id], currentSetup: displays.setupKey)
+        return allowed ? ws : nil
+    }
+
+    /// Places the windows of an app that was opened after its workspace was restored.
+    func placeLateApp(_ bundleID: String) async {
+        guard let ws = workspaceForLateApps(),
+              ws.windows.contains(where: { $0.bundleID == bundleID && !$0.isExcluded }) else { return }
+        let expected = ws.windows.filter { $0.bundleID == bundleID && !$0.isExcluded }.count
+        await waitForWindows([bundleID: expected])
+        // Re-check after waiting: displays, settings or workspaces may have changed.
+        guard !isBusy, let current = workspaceForLateApps(), current.id == ws.id else { return }
+        var subset = current
+        subset.windows = current.windows.filter { $0.bundleID == bundleID }
+        let plan = plan(for: subset)
+        guard !plan.moves.isEmpty else { return }
+        isBusy = true
+        let result = await RestoreExecutor.execute(plan, mover: windowSystem, automatic: true)
+        isBusy = false
+        guard !result.undo.entries.isEmpty else { return }
+        settled.merge(result.undo.settledPlacements) { _, new in new }
+        undoRecord = result.undo
+        let appName = plan.moves.first?.saved.appName ?? bundleID
+        await refresh()
+        presenter?.toast(String(localized: "Placed \(appName) for “\(current.name)”"), actionTitle: String(localized: "Undo")) { [weak self] in
+            Task { await self?.undoLastRestore() }
+        }
     }
 
     /// Whether "Open & Place" makes sense for a skipped window: the app isn't running, or

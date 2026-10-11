@@ -37,3 +37,15 @@ import Testing
         #expect(AutoRestorePolicy.action(for: input(mode: .always, onboarded: false)) == .none)
     }
 }
+
+@Suite struct LatePlacementPolicyTests {
+    @Test func needsConsent() {
+        #expect(LatePlacementPolicy.allows(enabled: true, mode: .always, restoredOnSetup: nil, currentSetup: "A"))
+        #expect(LatePlacementPolicy.allows(enabled: true, mode: .ask, restoredOnSetup: "A", currentSetup: "A"))
+        // Restored on another desk (or never): no consent for this one.
+        #expect(!LatePlacementPolicy.allows(enabled: true, mode: .ask, restoredOnSetup: "B", currentSetup: "A"))
+        #expect(!LatePlacementPolicy.allows(enabled: true, mode: .ask, restoredOnSetup: nil, currentSetup: "A"))
+        #expect(!LatePlacementPolicy.allows(enabled: true, mode: .never, restoredOnSetup: "A", currentSetup: "A"))
+        #expect(!LatePlacementPolicy.allows(enabled: false, mode: .always, restoredOnSetup: "A", currentSetup: "A"))
+    }
+}
