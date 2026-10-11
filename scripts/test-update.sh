@@ -2,6 +2,11 @@
 # End-to-end test of in-app updates (Sparkle), entirely on this Mac:
 #
 #   scripts/test-update.sh
+#   SIGN_IDENTITY="Apple Development: Name (ID)" scripts/test-update.sh
+#
+# With SIGN_IDENTITY the copies are signed like a release (hardened runtime, Sparkle's
+# helpers signed inside out, no XPC services), which also exercises Sparkle's team-ID
+# checks between the app and its installer. Without it they are ad-hoc signed.
 #
 # Builds DockState Dev, makes an "old" 0.0.1 and a "new" 0.0.2 copy signed for a
 # throw-away EdDSA key, serves 0.0.2 (DMG + appcast) from a local web server and checks:
@@ -25,7 +30,7 @@ echo "• Building DockState Dev"
 xcodebuild -project DockState.xcodeproj -scheme DockState -configuration Debug \
   -derivedDataPath build/UpdateTest -clonedSourcePackagesDirPath build/SourcePackages \
   -destination "platform=macOS,arch=$(uname -m)" \
-  CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= ENABLE_HARDENED_RUNTIME=NO \
+  CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= ENABLE_HARDENED_RUNTIME=NO ENABLE_DEBUG_DYLIB=NO \
   build -quiet
 BUILT="build/UpdateTest/Build/Products/Debug/DockStateDev.app"
 
@@ -47,7 +52,15 @@ copy() {
   plutil -replace CFBundleShortVersionString -string "$1" "$app/Contents/Info.plist"
   plutil -replace CFBundleVersion -string "$2" "$app/Contents/Info.plist"
   plutil -replace SUPublicEDKey -string "$PUBLIC_KEY" "$app/Contents/Info.plist"
-  codesign --force --sign - "$app" 2>/dev/null
+  if [[ -n "${SIGN_IDENTITY:-}" ]]; then
+    local fw="$app/Contents/Frameworks/Sparkle.framework"
+    rm -rf "$fw/Versions/B/XPCServices" "$fw/XPCServices"
+    for item in "$fw/Versions/B/Autoupdate" "$fw/Versions/B/Updater.app" "$fw" "$app"; do
+      codesign --force --sign "$SIGN_IDENTITY" --options=runtime "$item" 2>/dev/null
+    done
+  else
+    codesign --force --sign - "$app" 2>/dev/null
+  fi
 }
 copy 0.0.1 1 "$WORK/old"
 copy 0.0.2 2 "$WORK/new"
