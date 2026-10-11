@@ -15,6 +15,14 @@ public protocol WindowMoving: Sendable {
     func setFrame(_ frame: Frame, of window: LiveWindowID) async -> Result<Frame, MoveFailure>
     /// The window's frame right now, or nil when it no longer exists.
     func frame(of window: LiveWindowID) async -> Frame?
+    /// Called around a series of moves so per-app setup happens once.
+    func beginBatch() async
+    func endBatch() async
+}
+
+public extension WindowMoving {
+    func beginBatch() async {}
+    func endBatch() async {}
 }
 
 public struct UndoEntry: Sendable, Equatable {
@@ -107,6 +115,7 @@ public enum RestoreExecutor {
         var entries: [UndoEntry] = []
         var failures = plan.skipped.map { RestoreResult.Failure(saved: $0.saved, reason: $0.skipReason!) }
         var moved = 0
+        await mover.beginBatch()
         for item in plan.moves {
             guard case .move(let window, let target, _) = item.kind else { continue }
             switch await mover.setFrame(target, of: window.id) {
@@ -123,6 +132,7 @@ public enum RestoreExecutor {
                 }
             }
         }
+        await mover.endBatch()
         return RestoreResult(
             workspaceID: plan.workspace.id, workspaceName: plan.workspace.name, movedCount: moved,
             alreadyInPlaceCount: plan.inPlace.count, notRestored: failures,
@@ -134,6 +144,7 @@ public enum RestoreExecutor {
     /// still where the restore left them. Anything the user moved since is respected.
     public static func undo(_ record: UndoRecord, mover: some WindowMoving, tolerance: Double = PlacementTolerance.position) async -> UndoResult {
         var restored = 0, changed = 0, gone = 0
+        await mover.beginBatch()
         // Newest first, so a window moved twice returns through each step.
         for entry in record.entries.reversed() {
             guard let current = await mover.frame(of: entry.window) else { gone += 1; continue }
@@ -144,6 +155,7 @@ public enum RestoreExecutor {
             case .failure: changed += 1
             }
         }
+        await mover.endBatch()
         return UndoResult(restoredCount: restored, changedSinceCount: changed, goneCount: gone)
     }
 }

@@ -52,6 +52,26 @@ public struct DisplayDescriptor: Codable, Hashable, Sendable, Identifiable {
 }
 
 public extension Array where Element == DisplayDescriptor {
+    /// Identifies a display configuration: which displays, where, at what resolution.
+    /// Deliberately ignores `visibleFrame`, which changes when the Dock moves or hides.
+    var setupKey: String {
+        map { "\($0.id)@\(Int($0.frame.x)),\(Int($0.frame.y)) \(Int($0.frame.width))x\(Int($0.frame.height))/\($0.pixelWidth)x\($0.pixelHeight)" }
+            .sorted()
+            .joined(separator: "|")
+    }
+
+    /// Makes ids unique (identical monitors can report the same UUID) by suffixing duplicates.
+    func uniquingIDs() -> [DisplayDescriptor] {
+        var seen: [String: Int] = [:]
+        return map { d in
+            var d = d
+            let n = seen[d.id, default: 0]
+            seen[d.id] = n + 1
+            if n > 0 { d.id += "#\(n + 1)" }
+            return d
+        }
+    }
+
     /// The display containing the centre of `frame`, or the one it overlaps most.
     func display(containing frame: Frame) -> DisplayDescriptor? {
         if let hit = first(where: { $0.frame.contains(x: frame.midX, y: frame.midY) }) { return hit }

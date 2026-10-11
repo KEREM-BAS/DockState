@@ -18,7 +18,7 @@ public enum SystemDisplays {
         // AppKit uses bottom-left coordinates anchored at the primary screen.
         let primaryHeight = screens.first?.frame.height ?? CGDisplayBounds(CGMainDisplayID()).height
 
-        return ids.prefix(Int(count)).compactMap { id -> DisplayDescriptor? in
+        let displays = ids.prefix(Int(count)).compactMap { id -> DisplayDescriptor? in
             guard CGDisplayMirrorsDisplay(id) == kCGNullDirectDisplay else { return nil }
             let bounds = CGDisplayBounds(id)
             let screen = screens.first { ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value == id }
@@ -47,6 +47,7 @@ public enum SystemDisplays {
                 pixelHeight: mode?.pixelHeight ?? Int(bounds.height),
                 scale: Double(screen?.backingScaleFactor ?? 1))
         }
+        return displays.uniquingIDs()
     }
 }
 
