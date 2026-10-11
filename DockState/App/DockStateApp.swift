@@ -6,32 +6,19 @@ struct DockStateApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     var body: some Scene {
-        MenuBarExtra {
-            MenuBarPopover()
-                .environment(delegate.model)
-                .environment(delegate.actions)
-        } label: {
-            MenuBarLabel(model: delegate.model)
+        // The menu bar icon and its panel are AppKit (see StatusItemController). This scene
+        // only provides the app menu commands, which appear while a DockState window is open.
+        Settings {
+            EmptyView()
         }
-        .menuBarExtraStyle(.window)
-    }
-}
-
-private struct MenuBarLabel: View {
-    var model: AppModel
-    @State private var frame = 0
-
-    var body: some View {
-        let state = model.menuBarState
-        Image(nsImage: MenuBarIcon.image(for: state, frame: frame))
-            .accessibilityLabel(Text(MenuBarIcon.accessibilityDescription(for: state)))
-            .task(id: state == .restoring) {
-                // Animate only while restoring; no timers otherwise.
-                guard state == .restoring else { frame = 0; return }
-                while !Task.isCancelled {
-                    try? await Task.sleep(for: .milliseconds(120))
-                    frame += 1
-                }
+        .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button(String(localized: "About DockState")) { delegate.actions.showSettings(tab: .about) }
             }
+            CommandGroup(replacing: .appSettings) {
+                Button(String(localized: "Settings…")) { delegate.actions.showSettings() }
+                    .keyboardShortcut(",", modifiers: .command)
+            }
+        }
     }
 }
