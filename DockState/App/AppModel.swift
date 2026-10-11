@@ -147,13 +147,27 @@ final class AppModel {
         Task { await refresh() }
     }
 
+    /// First time: the system prompt (it adds DockState to the list and offers to open
+    /// System Settings). After that: open System Settings directly.
     func requestPermission() {
         if !settings.didPromptForAccessibility {
             settings.didPromptForAccessibility = true
             AccessibilityPermission.requestPrompt()
+        } else {
+            AccessibilityPermission.openSystemSettings()
         }
-        AccessibilityPermission.openSystemSettings()
         beginWatchingPermission()
+    }
+
+    func stopWatchingPermission() {
+        permissionTimer?.invalidate()
+        permissionTimer = nil
+    }
+
+    /// The user allowed DockState before, but this build isn't trusted — typical after an
+    /// update of an unsigned build: the switch looks on but belongs to the old version.
+    var permissionLooksStale: Bool {
+        settings.didPromptForAccessibility && !permissionGranted
     }
 
     // MARK: - Scanning
@@ -290,39 +304,64 @@ final class AppModel {
     }
 
     /// Saves (or replaces, when the name exists) a workspace from the current windows.
+    ///
+    /// Refuses to save a layout without windows — that would silently wipe an existing
+    /// workspace (e.g. after permission was revoked or on an empty Space). Replacing an
+    /// existing workspace can be undone from the toast.
     @discardableResult
-    func saveCurrentLayout(named rawName: String, excluding excluded: Set<LiveWindowID> = []) -> Workspace? {
+    func saveCurrentLayout(named rawName: String, excluding excluded: Set<LiveWindowID> = [],
+                           markExcluded: Set<LiveWindowID> = [], announce: Bool = true) -> Workspace? {
         let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return nil }
+        guard !name.isEmpty, permissionGranted else { return nil }
         var ws = WorkspaceCapture.capture(
             name: name, displays: displays, windows: liveWindows,
-            includeTitles: settings.useWindowTitles, excluding: excluded)
+            includeTitles: settings.useWindowTitles, excluding: excluded, markExcluded: markExcluded)
+        guard !ws.windows.isEmpty else {
+            presenter?.toast(String(localized: "No windows to save on this Space."))
+            return nil
+        }
+        var replaced: Workspace?
         if let index = workspaces.firstIndex(where: { $0.name.lowercased() == name.lowercased() }) {
             let existing = workspaces[index]
+            replaced = existing
             ws.id = existing.id
             ws.autoMode = existing.autoMode
             ws.createdAt = existing.createdAt
+            ws.lastRestoredAt = existing.lastRestoredAt
             workspaces[index] = ws
         } else {
             workspaces.append(ws)
         }
         persist()
         presenter?.requestNotificationPermissionIfNeeded()
+        if announce {
+            if let replaced {
+                presenter?.toast(String(localized: "Replaced “\(ws.name)”"), actionTitle: String(localized: "Undo")) { [weak self] in
+                    self?.revert(to: replaced)
+                }
+            } else {
+                presenter?.toast(String(localized: "Saved “\(ws.name)”"))
+            }
+        }
         return ws
+    }
+
+    /// Puts back a previous version of a workspace (undo of a replace or an update).
+    private func revert(to previous: Workspace) {
+        guard let i = workspaces.firstIndex(where: { $0.id == previous.id }) else { return }
+        workspaces[i] = previous
+        persist()
     }
 
     func updateFromCurrentLayout(_ workspace: Workspace) async {
         await refresh()
-        // Keep windows the user excluded excluded.
-        let excludedKeys = Set(workspace.windows.filter(\.isExcluded).map { "\($0.bundleID)|\($0.title ?? "")" })
-        guard var updated = saveCurrentLayout(named: workspace.name) else { return }
-        updated.windows = updated.windows.map { w in
-            var w = w
-            w.isExcluded = excludedKeys.contains("\(w.bundleID)|\(w.title ?? "")")
-            return w
+        // Keep excluded windows excluded, by window identity rather than by title.
+        let keepExcluded = workspace.liveIDsOfExcludedWindows(in: liveWindows, runningBundleIDs: runningBundleIDs)
+        let previous = workspace
+        guard saveCurrentLayout(named: workspace.name, markExcluded: keepExcluded, announce: false) != nil else { return }
+        presenter?.toast(String(localized: "Updated “\(workspace.name)”"), actionTitle: String(localized: "Undo")) { [weak self] in
+            self?.revert(to: previous)
         }
-        replace(updated)
-        presenter?.toast(String(localized: "Updated “\(workspace.name)”"))
     }
 
     func rename(_ target: Workspace, to newName: String) {

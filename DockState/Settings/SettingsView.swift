@@ -134,7 +134,7 @@ private struct GeneralSettings: View {
                         Label(String(localized: "Allowed"), systemImage: "circle.fill")
                             .labelStyle(StatusLabelStyle(color: .green))
                     } else {
-                        Button(String(localized: "Fix…")) { actions.showOnboarding(step: .permission) }
+                        Button(String(localized: "Fix…")) { actions.requirePermission(then: nil) }
                     }
                 }
             }

@@ -58,7 +58,7 @@ private struct StatusCard: View {
             }
             switch state.kind {
             case .permission:
-                Button(String(localized: "Allow…")) { actions.showOnboarding(step: .permission) }
+                Button(String(localized: "Allow…")) { actions.requirePermission(then: nil) }
                     .buttonStyle(.bordered).frame(maxWidth: .infinity)
             case .save:
                 Button(String(localized: "Save Current Layout…")) { actions.showSave() }

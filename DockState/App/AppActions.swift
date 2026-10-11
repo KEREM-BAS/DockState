@@ -18,6 +18,8 @@ final class AppActions {
     var previewWorkspaceID: UUID?
     var settingsTab: SettingsTab = .general
     var onboardingStep: OnboardingStep = .welcome
+    /// What the user was trying to do when DockState asked for permission.
+    @ObservationIgnored private var pendingAfterPermission: PendingAction?
 
     init(model: AppModel) {
         self.model = model
@@ -37,11 +39,31 @@ final class AppActions {
 
     func finishOnboarding() {
         model.settings.hasCompletedOnboarding = true
+        model.stopWatchingPermission()
         router.close(WindowID.onboarding)
+    }
+
+    /// Asks for permission and remembers what to do once it's granted.
+    func requirePermission(then action: PendingAction?) {
+        pendingAfterPermission = action
+        showOnboarding(step: .permission)
+    }
+
+    func permissionGrantedForExistingUser() {
+        let action = pendingAfterPermission
+        pendingAfterPermission = nil
+        finishOnboarding()
+        switch action {
+        case .save: showSave()
+        case .preview(let id): if let ws = model.workspace(id: id) { showPreview(ws) }
+        case .restoreRecognized: restoreRecognized()
+        case nil: model.presenter?.toast(String(localized: "DockState can arrange your windows now."))
+        }
     }
 
     func showSave() {
         closeMenuBarPopover()
+        guard model.permissionGranted else { requirePermission(then: .save); return }
         Task { await model.refresh() }
         router.show(WindowID.save, title: String(localized: "Save Current Layout"), size: NSSize(width: 420, height: 190)) {
             SaveLayoutView().environment(model).environment(self)
@@ -72,7 +94,7 @@ final class AppActions {
 
     func showPreview(_ workspace: Workspace) {
         closeMenuBarPopover()
-        guard model.permissionGranted else { showOnboarding(step: .permission); return }
+        guard model.permissionGranted else { requirePermission(then: .preview(workspace.id)); return }
         previewWorkspaceID = workspace.id
         Task { await model.refresh() }
         router.show(WindowID.preview, title: String(localized: "Restore \(workspace.name)"), size: NSSize(width: 860, height: 470)) {
@@ -92,7 +114,7 @@ final class AppActions {
 
     /// ⌥⌘R: restore the workspace that matches the connected displays.
     func restoreRecognized() {
-        guard model.permissionGranted else { showOnboarding(step: .permission); return }
+        guard model.permissionGranted else { requirePermission(then: .restoreRecognized); return }
         Task {
             await model.refresh()
             if let candidate = model.recognized {
@@ -163,6 +185,12 @@ final class AppActions {
             }
         }
     }
+}
+
+enum PendingAction {
+    case save
+    case preview(UUID)
+    case restoreRecognized
 }
 
 enum OnboardingStep: Int {

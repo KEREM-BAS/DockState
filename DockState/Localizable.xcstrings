@@ -504,6 +504,16 @@
         }
       }
     },
+    "Already turned on? After an update, macOS can keep the switch on for the old version. Select DockState in the list, remove it with –, then add it again with +.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zaten açık mı? Bir güncellemeden sonra macOS anahtarı eski sürüm için açık tutabilir. Listede DockState’i seçin, – ile kaldırın, ardından + ile yeniden ekleyin."
+          }
+        }
+      }
+    },
     "Always restore": {
       "localizations": {
         "tr": {
@@ -760,6 +770,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "DockState şunları yapabilir"
+          }
+        }
+      }
+    },
+    "DockState can arrange your windows now.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState artık pencerelerinizi düzenleyebilir."
           }
         }
       }
@@ -1184,6 +1204,16 @@
         }
       }
     },
+    "No windows to save on this Space.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu Alan’da kaydedilecek pencere yok."
+          }
+        }
+      }
+    },
     "No workspaces yet": {
       "localizations": {
         "tr": {
@@ -1498,6 +1528,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kayıtlı konumları pencerelerin şu anki düzeniyle değiştir."
+          }
+        }
+      }
+    },
+    "Replaced “%@”": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” değiştirildi"
           }
         }
       }
