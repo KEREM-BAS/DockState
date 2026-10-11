@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img" aria-labelledby="t d">
+  <title id="t">DockState</title>
+  <desc id="d">A MacBook with two external displays. Windows return to their saved places when the displays are reconnected.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef2f7"/>
+      <stop offset="1" stop-color="#dfe5ee"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#1d5fd8"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0b1b33" flood-opacity="0.18"/>
+    </filter>
+    <style>
+      .bezel { fill: #1f2328; }
+      .screen { fill: #f8fafc; }
+      .label { font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; fill: #ffffff; }
+      .caption { font: 500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; fill: #475569; }
+    </style>
+  </defs>
+
+  <rect width="960" height="360" rx="20" fill="url(#bg)"/>
+
+  <!-- Left monitor -->
+  <g filter="url(#shadow)">
+    <rect x="110" y="40" width="330" height="196" rx="10" class="bezel"/>
+    <rect x="118" y="48" width="314" height="180" rx="4" class="screen"/>
+    <rect x="252" y="236" width="46" height="34" class="bezel"/>
+    <rect x="222" y="268" width="106" height="8" rx="4" class="bezel"/>
+  </g>
+  <rect x="126" y="58" width="196" height="160" rx="5" fill="#6366f1"/>
+  <text x="138" y="80" class="label">Xcode</text>
+  <rect x="330" y="58" width="94" height="76" rx="5" fill="#10b981"/>
+  <text x="340" y="80" class="label">Terminal</text>
+  <rect x="330" y="142" width="94" height="76" rx="5" fill="#f59e0b"/>
+  <text x="340" y="164" class="label">Figma</text>
+
+  <!-- Right monitor -->
+  <g filter="url(#shadow)">
+    <rect x="470" y="58" width="290" height="170" rx="10" class="bezel"/>
+    <rect x="478" y="66" width="274" height="154" rx="4" class="screen"/>
+    <rect x="594" y="228" width="42" height="40" class="bezel"/>
+    <rect x="566" y="266" width="98" height="8" rx="4" class="bezel"/>
+  </g>
+  <rect x="486" y="74" width="170" height="138" rx="5" fill="#0ea5e9"/>
+  <text x="498" y="96" class="label">Safari</text>
+  <rect x="664" y="74" width="80" height="138" rx="5" fill="#14b8a6"/>
+  <text x="674" y="96" class="label">Mail</text>
+
+  <!-- MacBook -->
+  <g filter="url(#shadow)">
+    <rect x="780" y="156" width="150" height="96" rx="7" class="bezel"/>
+    <rect x="786" y="162" width="138" height="84" rx="3" class="screen"/>
+    <path d="M766 254 h178 l-10 12 h-158 z" fill="#2b3036"/>
+  </g>
+  <rect x="792" y="168" width="70" height="72" rx="4" fill="#a855f7"/>
+  <text x="799" y="186" class="label" style="font-size:11px">Slack</text>
+  <rect x="866" y="168" width="52" height="72" rx="4" fill="#84cc16"/>
+  <text x="872" y="186" class="label" style="font-size:11px">Notes</text>
+
+  <!-- Badge -->
+  <g transform="translate(40 290)">
+    <rect width="34" height="34" rx="8" fill="url(#accent)"/>
+    <rect x="6" y="10" width="13" height="10" rx="2" fill="none" stroke="#fff" stroke-width="2.4"/>
+    <rect x="17" y="14" width="10" height="8" rx="2" fill="#1d5fd8" stroke="#fff" stroke-width="2.4"/>
+    <text x="48" y="15" class="caption" style="font-weight:700;fill:#0f172a;font-size:15px">Home Desk restored</text>
+    <text x="48" y="31" class="caption">7 windows are back in place · Undo anytime</text>
+  </g>
+</svg>
