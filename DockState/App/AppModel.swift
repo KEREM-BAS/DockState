@@ -44,7 +44,7 @@ final class AppModel {
     var lastResult: RestoreResult?
     private(set) var undoRecord: UndoRecord?
     /// Workspace removed with "Delete", kept until the toast's Undo expires.
-    @ObservationIgnored private var recentlyDeleted: (workspace: Workspace, index: Int)?
+    private var recentlyDeleted: (workspace: Workspace, index: Int)?
 
     /// Hooks the UI layer sets up to present windows and transient UI.
     @ObservationIgnored var presenter: Presenter?
@@ -404,7 +404,9 @@ final class AppModel {
         }
     }
 
-    private func undoDelete() {
+    var canUndoDelete: Bool { recentlyDeleted != nil }
+
+    func undoDelete() {
         guard let (ws, index) = recentlyDeleted else { return }
         recentlyDeleted = nil
         workspaces.insert(ws, at: min(index, workspaces.count))

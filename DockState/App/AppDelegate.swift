@@ -84,8 +84,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: Presenter {
     func showResult() {
-        guard model.lastResult != nil else { return }
-        resultPanel.show(placement: .topTrailing, autoHideAfter: .seconds(20)) {
+        guard let result = model.lastResult else { return }
+        let summary = String(localized: "\(result.workspaceName) restored") + ". " + ResultCard.subtitle(result)
+        resultPanel.show(placement: .topTrailing, announcement: summary, autoHideAfter: .seconds(20)) {
             ResultCard(onClose: { [weak self] in self?.hideResult() })
                 .environment(model)
                 .environment(actions)
@@ -97,7 +98,7 @@ extension AppDelegate: Presenter {
     }
 
     func toast(_ message: String, actionTitle: String?, action: (@MainActor () -> Void)?) {
-        toastPanel.show(placement: .bottomCenter, autoHideAfter: .seconds(4.5)) {
+        toastPanel.show(placement: .bottomCenter, announcement: message, autoHideAfter: .seconds(4.5)) {
             ToastView(message: message, actionTitle: actionTitle) { [weak self] in
                 self?.toastPanel.hide()
                 action?()

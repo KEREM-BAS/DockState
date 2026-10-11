@@ -9,15 +9,26 @@ final class FloatingPanel {
 
     private var panel: NSPanel?
     private var hideTask: Task<Void, Never>?
+    private var hideDelay: Duration?
+    private var generation = 0
 
-    func show<Content: View>(placement: Placement, autoHideAfter: Duration? = nil, @ViewBuilder content: () -> Content) {
+    /// - Parameters:
+    ///   - announcement: read out by VoiceOver, since the panel never takes focus.
+    ///   - autoHideAfter: paused while the pointer is over the panel; tripled with VoiceOver on.
+    func show<Content: View>(placement: Placement, announcement: String? = nil, autoHideAfter: Duration? = nil,
+                             @ViewBuilder content: () -> Content) {
         hideTask?.cancel()
-        let host = NSHostingView(rootView: content().fixedSize())
+        generation += 1
+        let host = NSHostingView(rootView: content().fixedSize().onHover { [weak self] inside in
+            inside ? self?.pauseHiding() : self?.scheduleHide()
+        })
         let size = host.fittingSize
         let panel = self.panel ?? Self.makePanel()
         panel.contentView = host
         panel.setContentSize(size)
-        if let screen = NSScreen.main {
+        // The screen with the menu bar the user clicked, else the one with the pointer.
+        let mouse = NSEvent.mouseLocation
+        if let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main {
             let vf = screen.visibleFrame
             let origin: NSPoint = switch placement {
             case .topTrailing: NSPoint(x: vf.maxX - size.width - 12, y: vf.maxY - size.height - 8)
@@ -29,21 +40,45 @@ final class FloatingPanel {
         panel.orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { $0.duration = 0.18; panel.animator().alphaValue = 1 }
         self.panel = panel
-        if let delay = autoHideAfter {
-            hideTask = Task { [weak self] in
-                try? await Task.sleep(for: delay)
-                guard !Task.isCancelled else { return }
-                self?.hide()
-            }
+        if let announcement { Self.announce(announcement) }
+        hideDelay = autoHideAfter.map { NSWorkspace.shared.isVoiceOverEnabled ? $0 * 3 : $0 }
+        scheduleHide()
+    }
+
+    private func scheduleHide() {
+        hideTask?.cancel()
+        guard let delay = hideDelay else { return }
+        let mine = generation
+        hideTask = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled, let self, self.generation == mine else { return }
+            self.hide()
         }
+    }
+
+    private func pauseHiding() {
+        hideTask?.cancel()
     }
 
     func hide() {
         hideTask?.cancel()
         guard let panel else { return }
-        NSAnimationContext.runAnimationGroup({ $0.duration = 0.15; panel.animator().alphaValue = 0 }) {
-            MainActor.assumeIsolated { panel.orderOut(nil) }
+        let mine = generation
+        NSAnimationContext.runAnimationGroup({ $0.duration = 0.15; panel.animator().alphaValue = 0 }) { [weak self] in
+            MainActor.assumeIsolated {
+                // A newer show() may have reused the panel while this fade ran.
+                guard self?.generation == mine else { return }
+                panel.orderOut(nil)
+            }
         }
+    }
+
+    /// Asks VoiceOver to read `message`.
+    static func announce(_ message: String) {
+        NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested, userInfo: [
+            .announcement: message,
+            .priority: NSAccessibilityPriorityLevel.high.rawValue,
+        ])
     }
 
     var isVisible: Bool { panel?.isVisible ?? false }

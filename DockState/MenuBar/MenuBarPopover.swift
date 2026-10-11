@@ -169,7 +169,8 @@ struct SectionHeader: View {
     var body: some View {
         Text(title)
             .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(.tertiary)
+            .foregroundStyle(.secondary)
+            .accessibilityAddTraits(.isHeader)
             .padding(.horizontal, 10)
             .padding(.top, 6)
             .padding(.bottom, 2)

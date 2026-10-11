@@ -17,11 +17,11 @@ struct ResultCard: View {
                         .font(.system(size: 20)).foregroundStyle(.green)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(result.workspaceName) restored").font(.system(size: 13.5, weight: .semibold))
-                        Text(subtitle(result)).font(.system(size: 12)).foregroundStyle(.secondary)
+                        Text(Self.subtitle(result)).font(.system(size: 12)).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                         if result.automatic {
                             Text("Restored automatically · Always restore is on")
-                                .font(.system(size: 11)).foregroundStyle(.tertiary)
+                                .font(.system(size: 11)).foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -33,7 +33,7 @@ struct ResultCard: View {
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(verbatim: failure.saved.appName).font(.system(size: 12))
                                     Text(Copy.reason(failure.reason, appName: failure.saved.appName))
-                                        .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                                        .font(.system(size: 10.5)).foregroundStyle(.secondary)
                                 }
                                 Spacer()
                                 if model.canOpenAndPlace(failure.saved, reason: failure.reason),
@@ -70,7 +70,7 @@ struct ResultCard: View {
         }
     }
 
-    private func subtitle(_ r: RestoreResult) -> String {
+    static func subtitle(_ r: RestoreResult) -> String {
         if r.movedCount == 0 && r.notRestored.isEmpty { return String(localized: "Everything was already in place.") }
         if r.notRestored.isEmpty { return String(localized: "\(r.movedCount) windows are back in place.") }
         return String(localized: "\(r.movedCount) windows moved.") + " " + String(localized: "\(r.notRestored.count) couldn’t be restored.")

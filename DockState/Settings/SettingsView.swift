@@ -95,7 +95,7 @@ struct SettingsRow<Trailing: View>: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.system(size: 13))
                     if let subtitle {
-                        Text(subtitle).font(.system(size: 11)).foregroundStyle(.tertiary)
+                        Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -119,12 +119,12 @@ private struct GeneralSettings: View {
             SettingsGroup {
                 LanguageRow()
                 SettingsRow(title: String(localized: "Open at login")) {
-                    Toggle("", isOn: Binding(get: { loginEnabled }, set: { actions.opensAtLogin = $0; loginEnabled = actions.opensAtLogin }))
+                    Toggle(String(localized: "Open at login"), isOn: Binding(get: { loginEnabled }, set: { actions.opensAtLogin = $0; loginEnabled = actions.opensAtLogin }))
                         .toggleStyle(.switch).labelsHidden().controlSize(.small)
                 }
                 SettingsRow(title: String(localized: "Notify when known displays connect"),
                             subtitle: String(localized: "Workspaces set to “Always restore” skip this."), showsDivider: false) {
-                    Toggle("", isOn: $settings.notifyOnConnect).toggleStyle(.switch).labelsHidden().controlSize(.small)
+                    Toggle(String(localized: "Notify when known displays connect"), isOn: $settings.notifyOnConnect).toggleStyle(.switch).labelsHidden().controlSize(.small)
                 }
             }
             SettingsGroup {
@@ -162,14 +162,14 @@ private struct RestoreSettings: View {
         VStack(alignment: .leading, spacing: 14) {
             SettingsGroup {
                 SettingsRow(title: String(localized: "If an app isn’t open")) {
-                    Picker("", selection: $settings.appNotRunningPolicy) {
+                    Picker(String(localized: "If an app isn’t open"), selection: $settings.appNotRunningPolicy) {
                         Text("Skip it").tag(AppNotRunningPolicy.skip)
                         Text("Open it first").tag(AppNotRunningPolicy.openFirst)
                     }
                     .labelsHidden().fixedSize()
                 }
                 SettingsRow(title: String(localized: "If a saved display is missing")) {
-                    Picker("", selection: $settings.missingDisplayPolicy) {
+                    Picker(String(localized: "If a saved display is missing"), selection: $settings.missingDisplayPolicy) {
                         Text("Use main display").tag(MissingDisplayPolicy.useMainDisplay)
                         Text("Leave windows in place").tag(MissingDisplayPolicy.leaveInPlace)
                     }
@@ -178,7 +178,7 @@ private struct RestoreSettings: View {
                 SettingsRow(title: String(localized: "Use window titles to tell windows apart"),
                             subtitle: String(localized: "Helps with apps that have several windows. Titles are stored only on this Mac and never logged."),
                             showsDivider: false) {
-                    Toggle("", isOn: Binding(
+                    Toggle(String(localized: "Use window titles to tell windows apart"), isOn: Binding(
                         get: { settings.useWindowTitles },
                         set: { on in
                             settings.useWindowTitles = on
@@ -188,7 +188,7 @@ private struct RestoreSettings: View {
                 }
             }
             Text("Each workspace can ask, restore automatically, or do nothing when its displays connect. Change this in Manage Workspaces.")
-                .font(.system(size: 11.5)).foregroundStyle(.tertiary)
+                .font(.system(size: 11.5)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -205,7 +205,7 @@ private struct ShortcutSettings: View {
                 SettingsRow(title: String(localized: "Use global keyboard shortcuts"),
                             subtitle: String(localized: "They work in every app and take priority over the app’s own shortcut."),
                             showsDivider: false) {
-                    Toggle("", isOn: Binding(get: { settings.globalShortcutsEnabled },
+                    Toggle(String(localized: "Use global keyboard shortcuts"), isOn: Binding(get: { settings.globalShortcutsEnabled },
                                              set: { settings.globalShortcutsEnabled = $0; actions.installHotKeys() }))
                         .toggleStyle(.switch).labelsHidden().controlSize(.small)
                 }
@@ -249,7 +249,7 @@ private struct AboutSettings: View {
             }
             .padding(.top, 8)
             Text("Includes versions and display models — never window titles or app names.")
-                .font(.system(size: 11)).foregroundStyle(.tertiary)
+                .font(.system(size: 11)).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
@@ -306,7 +306,7 @@ private struct LanguageRow: View {
 
     var body: some View {
         SettingsRow(title: String(localized: "Language")) {
-            Picker("", selection: $selection) {
+            Picker(String(localized: "Language"), selection: $selection) {
                 Text("System (\(AppLanguage.systemLanguageName))").tag(AppLanguage.system)
                 ForEach(AppLanguage.supported, id: \.self) { lang in
                     Text(verbatim: lang.nativeName).tag(lang)

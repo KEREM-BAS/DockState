@@ -191,7 +191,7 @@ private struct PermissionStep: View {
                 Link(String(localized: "Read the code on GitHub"), destination: Links.repository)
             }
             .font(.system(size: 11))
-            .foregroundStyle(.tertiary)
+            .foregroundStyle(.secondary)
             .padding(.horizontal, 24)
             .padding(.top, 14)
             .padding(.bottom, 18)
@@ -259,7 +259,7 @@ private struct FirstSaveStep: View {
                         .frame(width: 250, height: 150)
                         .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
                     Text("\(model.displays.count) displays recognized: \(Copy.displayList(model.displays))")
-                        .font(.system(size: 11)).foregroundStyle(.tertiary)
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
                         .frame(width: 250, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -288,7 +288,7 @@ private struct FirstSaveStep: View {
 
             HStack {
                 StepDots(current: 2)
-                Text("You can rename or update it anytime.").font(.system(size: 11.5)).foregroundStyle(.tertiary)
+                Text("You can rename or update it anytime.").font(.system(size: 11.5)).foregroundStyle(.secondary)
                     .padding(.leading, 8)
                 Spacer()
                 Button(String(localized: "Skip")) { actions.finishOnboarding() }
