@@ -423,6 +423,16 @@ enum MapBoxes {
     }
 }
 
+/// Debug builds are "DockState Dev" (bundle ID `com.kerembas.DockState.debug`), so they
+/// never share settings, the Accessibility entry or workspaces with an installed DockState.
+enum AppIdentity {
+    #if DEBUG
+    static let supportFolder = "DockState Dev"
+    #else
+    static let supportFolder = "DockState"
+    #endif
+}
+
 enum Links {
     static let repository = URL(string: "https://github.com/KEREM-BAS/DockState")!
     static let issues = URL(string: "https://github.com/KEREM-BAS/DockState/issues")!

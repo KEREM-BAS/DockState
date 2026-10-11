@@ -37,6 +37,9 @@ public final class AccessibilityWindowSystem: WindowMoving, @unchecked Sendable 
 
     public init() {}
 
+    /// DockState's release and development builds; neither arranges the other's windows.
+    static let ownBundleIDPrefix = "com.kerembas.DockState"
+
     /// Regular (Dock-visible) apps except DockState itself. Call on the main actor.
     @MainActor
     public static func runningApps() -> [RunningApp] {
@@ -45,6 +48,7 @@ public final class AccessibilityWindowSystem: WindowMoving, @unchecked Sendable 
         let apps = NSWorkspace.shared.runningApplications.compactMap { app -> RunningApp? in
             guard app.activationPolicy == .regular, app.processIdentifier != me, !app.isTerminated else { return nil }
             guard let bundleID = app.bundleIdentifier else { skippedNoBundle += 1; return nil }
+            guard !bundleID.hasPrefix(ownBundleIDPrefix) else { return nil }
             return RunningApp(pid: app.processIdentifier, bundleID: bundleID, name: app.localizedName ?? bundleID)
         }
         if skippedNoBundle > 0 { log.info("Skipped \(skippedNoBundle, privacy: .public) apps without a bundle identifier") }

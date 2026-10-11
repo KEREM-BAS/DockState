@@ -40,11 +40,11 @@ public struct WorkspaceStore: Sendable {
         self.fileURL = fileURL
     }
 
-    /// `~/Library/Application Support/DockState/workspaces.json`
-    public static func defaultURL() throws -> URL {
+    /// `~/Library/Application Support/<folder>/workspaces.json` (`DockState` for releases).
+    public static func defaultURL(folder: String = "DockState") throws -> URL {
         let base = try FileManager.default.url(
             for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        return base.appendingPathComponent("DockState", isDirectory: true)
+        return base.appendingPathComponent(folder, isDirectory: true)
             .appendingPathComponent("workspaces.json")
     }
 

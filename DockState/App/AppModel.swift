@@ -69,7 +69,7 @@ final class AppModel {
     /// Hooks the UI layer sets up to present windows and transient UI.
     @ObservationIgnored var presenter: Presenter?
 
-    init(settings: AppSettings = AppSettings(), storeURL: URL? = try? WorkspaceStore.defaultURL()) {
+    init(settings: AppSettings = AppSettings(), storeURL: URL? = try? WorkspaceStore.defaultURL(folder: AppIdentity.supportFolder)) {
         self.settings = settings
         self.store = storeURL.map(WorkspaceStore.init(fileURL:))
         promptedInEarlierSession = settings.didPromptForAccessibility
