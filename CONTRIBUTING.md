@@ -5,7 +5,8 @@ an issue to discuss it — "does one thing well" is a feature too.
 
 ## Setup
 
-- macOS 14+ and Xcode 26 or later (what CI uses). No other tools or package managers needed.
+- macOS 14+ and Xcode 26 or later (what CI uses). Xcode fetches the one dependency, Sparkle, through Swift
+  Package Manager; no other tools needed.
 - `open DockState.xcodeproj` and Run. Debug builds are **DockState Dev** (`DockStateDev.app`, bundle ID
   `com.kerembas.DockState.debug`) with their own settings, workspaces and Accessibility entry, so they can run
   next to an installed DockState without affecting it.

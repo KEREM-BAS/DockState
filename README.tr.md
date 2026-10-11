@@ -65,14 +65,15 @@ Siz onay vermeden hiçbir pencere taşınmaz.
 - **Otomasyonu siz seçersiniz** — her çalışma alanı için: *Bana sor* (bildirim, varsayılan), *Her zaman geri yükle* veya *Hiçbir şey yapma*. Otomatik geri yükleme yalnızca ekran düzeni gerçekten değiştiğinde olur — sıradan bir uyanma veya kilit açmada asla.
 - **Sonradan açtığınız uygulamalar** — bir çalışma alanını geri yükledikten sonra açtığınız uygulama (on dakika sonra açılan Slack) da kayıtlı yerine gider. Kendi Geri Al düğmesiyle.
 - **Menü çubuğu öncelikli** — gözünüzün önünden çekilir; simgeye sol veya sağ tıklayın. Pencereler yerinde değilse simgede bir nokta, izin eksikse bir rozet görünür. Bir DockState penceresi açıkken Dock’ta ve Cmd+Tab’de de görünür; pencereleri en üstte kalır (Ayarlar › Genel), böylece düzenlediğiniz uygulamaların arkasında kaybolmaz.
+- **Kendini günceller** — yeni sürümler tek tıkla (ya da isterseniz otomatik olarak) uygulamanın içinden yüklenir. Her güncelleme, hiçbir şey değiştirilmeden önce DockState’in imza anahtarıyla doğrulanır. [Sparkle](https://sparkle-project.org) üzerine kuruludur.
 - **İsterseniz klavye kısayolları** — kaydet, eşleşen düzeni geri yükle, geri al. Varsayılan olarak kapalıdır (genel kısayollar her uygulamada aynı tuşları devralır); Ayarlar’dan kendi kısayollarınızı kaydedin.
 - **Türkçe ve İngilizce**, uygulama içinden dil değiştirme. Yeni dillere katkı memnuniyetle karşılanır.
 
 ## Gizlilik
 
 - **Her şey Mac’inizde kalır.** Hesap yok, bulut yok, analitik yok.
-- **Ağ isteği yok** — *Ayarlar › Genel › Güncellemeleri otomatik denetle* seçeneğini açmadığınız (ya da *Şimdi Denetle*’ye basmadığınız) sürece. Açarsanız DockState günde en fazla bir kez bu deponun herkese açık sürüm akışını okur ve sizinle ilgili hiçbir şey göndermez.
-- DockState, başka uygulamaların pencerelerini taşımak için macOS’un **Erişilebilirlik** iznine ihtiyaç duyar. Pencere konumlarını, boyutlarını ve başlıklarını okur; konum ve boyutları ayarlar. Pencere içeriklerini asla okumaz.
+- **Siz izin vermeden ağ isteği yok.** Kurulumdan sonra DockState, güncellemeleri otomatik denetleyip denetlemeyeceğini bir kez sorar. Kabul ederseniz günde bir kez GitHub’daki güncelleme akışını okur; aksi halde yalnızca *Şimdi Denetle*’ye bastığınızda. Sizinle ilgili hiçbir şey göndermez (sistem profili yok, çerez yok, analitik yok) — her indirmede olduğu gibi yalnızca akış istenir.
+- DockState, başka uygulamaların pencerelerini taşımak için macOS’un **Erişilebilirlik** iznine ihtiyaç duyar (macOS 27’de *Aygıt Denetimi ve Veri Erişimi* altında listelenir). Pencere konumlarını, boyutlarını ve başlıklarını okur; konum ve boyutları ayarlar. Pencere içeriklerini asla okumaz.
 - **Ekran Kaydı izni gerekmez.** Önizlemeler ekran görüntüsü değil, şematik haritadır.
 - Pencere başlıkları yalnızca `~/Library/Application Support/DockState/workspaces.json` içinde saklanır, asla günlüğe yazılmaz ve *Ayarlar › Geri Yükle* bölümünden kapatılabilir (mevcut başlıklar silinir, yenileri saklanmaz).
 - *Tanılama Bilgisini Kopyala* (Ayarlar › Hakkında) hata bildirimi için pencere başlığı, uygulama adı veya seri numarası içermeyen bir özet üretir.
@@ -82,6 +83,8 @@ Siz onay vermeden hiçbir pencere taşınmaz.
 1. [Releases](https://github.com/KEREM-BAS/DockState/releases) sayfasından en son **`DockState-x.y.z.dmg`** dosyasını indirin.
 2. Açın ve **DockState**’i **Uygulamalar** klasörüne sürükleyin.
 3. DockState’i başlatın ve üç adımlık kurulumu izleyin.
+
+Bundan sonra DockState kendini günceller (*Ayarlar › Genel* ya da *DockState › Güncellemeleri Denetle…*). 0.1.x kullanıyorsanız 0.2.0’ı bir kez indirin; sonraki sürümler uygulamanın içinden gelir.
 
 Developer ID ile imzalanan sürümler Apple tarafından notarize edilir ve normal şekilde açılır. `…-unsigned.dmg` adlı sürümler notarize değildir, bu yüzden macOS ilk açılışı engeller: DockState’i bir kez açın, ardından **Sistem Ayarları › Gizlilik ve Güvenlik** bölümüne gidip **Yine de Aç**’a tıklayın (macOS 14’te uygulamaya sağ tıklayıp **Aç**’ı da seçebilirsiniz). İmzasız bir sürümü güncelledikten sonra DockState’in Erişilebilirlik iznini kapatıp yeniden açın — macOS izni tam olarak o derlemeye bağlar.
 
@@ -117,7 +120,7 @@ cd DockState
 open DockState.xcodeproj        # Xcode 26 veya üzeri, ardından Run
 ```
 
-Kurulacak bağımlılık yok. Uygulama varsayılan olarak yerel çalıştırma için imzalanır; derlemeler arasında Erişilebilirlik iznini korumak için kendi ekibinizle imzalayın — bkz. [`Config/Signing.xcconfig`](Config/Signing.xcconfig).
+Xcode tek bağımlılığı, [Sparkle](https://sparkle-project.org)’ı, Swift Package Manager ile kendisi indirir. Uygulama varsayılan olarak yerel çalıştırma için imzalanır; derlemeler arasında Erişilebilirlik iznini korumak için kendi ekibinizle imzalayın — bkz. [`Config/Signing.xcconfig`](Config/Signing.xcconfig).
 
 Çekirdek mantık bir Swift paketindedir ve hiçbir izin gerektirmeden test edilir:
 
@@ -125,7 +128,7 @@ Kurulacak bağımlılık yok. Uygulama varsayılan olarak yerel çalıştırma i
 cd Packages/DockStateKit && swift test
 ```
 
-Uçtan uca öz-test, gerçek Mac’inizde geçici bir test penceresini taşır — bkz. [docs/TESTING.md](docs/TESTING.md).
+Uçtan uca öz-test, gerçek Mac’inizde geçici bir test penceresini taşır; `scripts/test-update.sh` ise yerel bir sunucuyla bir güncellemeyi baştan sona yükler — bkz. [docs/TESTING.md](docs/TESTING.md).
 
 ## Katkı
 
@@ -133,4 +136,4 @@ Hata bildirimleri, çeviriler ve pull request’ler memnuniyetle karşılanır �
 
 ## Lisans
 
-[MIT](LICENSE) © Kerem Baş ve DockState katkıcıları.
+[MIT](LICENSE) © Kerem Baş ve DockState katkıcıları. DockState, [Sparkle](https://sparkle-project.org)’ı (MIT) içerir; lisansı uygulamayla birlikte gelir (*Ayarlar › Hakkında › Açık Kaynak Lisansları*).

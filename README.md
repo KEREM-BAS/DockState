@@ -65,14 +65,15 @@ Nothing moves without you saying so.
 - **You choose the automation** — per workspace: *Ask me* (notification, default), *Always restore*, or *Do nothing*. Automatic restores happen only when the display setup actually changes — never on a plain wake or unlock.
 - **Apps you open later** — after you restore a workspace, an app you open afterwards (Slack ten minutes later) goes to its saved place too. With its own Undo.
 - **Menu bar first** — stays out of the way; left- or right-click the icon. It shows a dot when windows are out of place and a badge when permission is missing. While a DockState window is open it's also in the Dock and Cmd+Tab, and its windows stay on top (Settings › General) so they don't get lost behind the apps you're arranging.
+- **Updates itself** — new versions install from inside the app with one click (or automatically, if you choose). Every update is checked against DockState's signing key before anything is replaced. Built on [Sparkle](https://sparkle-project.org).
 - **Keyboard shortcuts, if you want them** — save, restore matching workspace, undo. Off by default (global shortcuts take over the same keys in every app); record your own in Settings.
 - **English and Türkçe**, with an in-app language switch. More languages welcome.
 
 ## Privacy
 
 - **Everything stays on your Mac.** No account, no cloud, no analytics.
-- **No network requests** unless you turn on *Settings › General › Check for updates automatically* (or press *Check Now*). DockState then reads this repository's public releases feed, at most once a day, and sends nothing about you.
-- DockState needs **Accessibility** permission — the macOS permission for moving other apps' windows. It reads window positions, sizes and titles, and sets positions and sizes. It never reads window contents.
+- **No network requests until you say so.** After setup DockState asks once whether to check for updates automatically. If you agree, it reads this repository's update feed on GitHub once a day; otherwise only when you press *Check Now*. It sends nothing about you (no system profile, no cookies, no analytics) — just the request for the feed, like any download.
+- DockState needs **Accessibility** permission — the macOS permission for moving other apps' windows (on macOS 27 it's listed under *Device Control and Data Access*). It reads window positions, sizes and titles, and sets positions and sizes. It never reads window contents.
 - **No Screen Recording permission.** Previews are drawn as schematic maps, not screenshots.
 - Window titles help tell multiple windows of the same app apart. They are kept only in `~/Library/Application Support/DockState/workspaces.json`, are never logged, and can be turned off in *Settings › Restore* (existing titles are deleted and new ones aren't stored).
 - *Copy Diagnostics* (Settings › About) produces a bug-report summary without window titles, app names or serial numbers.
@@ -82,6 +83,8 @@ Nothing moves without you saying so.
 1. Download the latest **`DockState-x.y.z.dmg`** from [Releases](https://github.com/KEREM-BAS/DockState/releases).
 2. Open it and drag **DockState** to **Applications**.
 3. Launch DockState and follow the three-step setup.
+
+From then on DockState updates itself (*Settings › General*, or *DockState › Check for Updates…*). Coming from 0.1.x? Download 0.2.0 once; later versions arrive in the app.
 
 Releases built with a Developer ID are signed and notarized by Apple and open normally. Builds named `…-unsigned.dmg` are not notarized, so macOS blocks the first launch: open DockState once, then go to **System Settings › Privacy & Security** and click **Open Anyway** (on macOS 14 you can also right-click the app and choose **Open**). After updating an unsigned build, turn DockState's Accessibility permission off and on again — macOS ties it to the exact build.
 
@@ -117,7 +120,7 @@ cd DockState
 open DockState.xcodeproj        # Xcode 26 or later, then Run
 ```
 
-No dependencies to install. The app is signed to run locally by default; to keep the Accessibility permission across rebuilds, sign with your own team — see [`Config/Signing.xcconfig`](Config/Signing.xcconfig).
+Xcode fetches the one dependency, [Sparkle](https://sparkle-project.org), through Swift Package Manager. The app is signed to run locally by default; to keep the Accessibility permission across rebuilds, sign with your own team — see [`Config/Signing.xcconfig`](Config/Signing.xcconfig).
 
 Core logic lives in a Swift package and is tested without any permissions:
 
@@ -125,7 +128,7 @@ Core logic lives in a Swift package and is tested without any permissions:
 cd Packages/DockStateKit && swift test
 ```
 
-An end-to-end self-test moves a throw-away test window on your real Mac — see [docs/TESTING.md](docs/TESTING.md).
+An end-to-end self-test moves a throw-away test window on your real Mac, and `scripts/test-update.sh` installs an update end to end with a local server — see [docs/TESTING.md](docs/TESTING.md).
 
 ## Contributing
 
@@ -133,4 +136,4 @@ Bug reports, translations and pull requests are very welcome — see [CONTRIBUTI
 
 ## License
 
-[MIT](LICENSE) © Kerem Baş and DockState contributors.
+[MIT](LICENSE) © Kerem Baş and DockState contributors. DockState includes [Sparkle](https://sparkle-project.org) (MIT); its license ships in the app (*Settings › About › Acknowledgements*).

@@ -36,6 +36,7 @@ resolution. Waking from sleep, unlocking, or the Dock moving on the same desk is
 | Displays already connected when DockState starts (login, relaunch) | Not a change: badge only, nothing moves |
 | A notification's *Restore* after the displays changed again | Opens the preview instead of restoring blindly |
 | Accessibility permission revoked | Menu bar shows a warning badge; nothing is moved; undo history is cleared |
+| DockState starts without the permission (after setup) | The permission step opens, instead of only the badge — unless you chose *Not Now* there; then only the badge, until you allow it |
 
 "Always restore" is an explicit per-workspace opt-in. Every restore — automatic or not — can be undone.
 Automatic restores never launch apps.
@@ -69,6 +70,23 @@ Automatic restores never launch apps.
 - *Settings › General › Keep DockState windows on top* (on by default) keeps those windows above other apps'
   windows. Onboarding never floats (System Settings must stay visible while you grant permission), links open
   in front of them, and the result card and toasts stay above them.
+- The update window, alerts and open/save panels count as DockState windows too: they keep DockState in the
+  Dock and Cmd+Tab while they're open (also when minimized), and clicking the Dock icon brings them forward.
+  While one is on screen, DockState's other windows stop floating, so it stays in front; links it opens (release
+  notes, *Version History*) open in front of DockState, which floats again once you use it.
+
+## The Accessibility permission
+
+- macOS lists it under *Privacy & Security › Accessibility*; on macOS 27 the list is called *Device Control
+  and Data Access*. The permission step names the one your Mac uses.
+- macOS keeps one entry per app and ties it to the signature it approved. After running another copy with the
+  same bundle ID (an unsigned build, an older version) the switch can look on while DockState isn't trusted.
+  When that looks likely — DockState was trusted before, you asked in an earlier session, or nothing happened
+  10 seconds after asking — the permission step offers **Reset Permission**: it removes the entry (no password
+  needed) and adds this copy back, so you only turn the switch on again. If macOS refuses, it explains how to
+  remove the entry with – and add it again with +.
+- Development builds are *DockState Dev* (`com.kerembas.DockState.debug`), with their own entry, settings and
+  workspaces, so they never take over an installed DockState's permission.
 
 ## Apps opened later
 
@@ -112,9 +130,25 @@ combinations used by macOS or by another DockState action are refused.
 
 ## Updates
 
-DockState makes no network requests unless *Check for updates automatically* is on (then at most once a day) or
-you press *Check Now*. It reads the public releases feed of this repository and links to the release page; it
-never downloads or installs anything by itself. Users of a stable version are only told about stable versions.
+DockState updates itself with [Sparkle](https://sparkle-project.org).
+
+- **Nothing is requested before you agree.** Right after setup DockState asks once: *Check for updates
+  automatically?* If yes, it reads `appcast.xml` from this repository's latest release once a day; if no, only
+  when you press *Check Now* (Settings › General) or *DockState › Check for Updates…*. No system profile is sent,
+  and no cookies are stored or sent, so checks can't be linked to each other. (If DockState starts with the
+  permission step on screen, the question waits for a later launch; *Check Now* works anyway.) Users who had
+  turned on the old update check in 0.1.x aren't asked again; their choice carries over.
+- **Finding an update** shows what's new and *Install Update*, *Remind Me Later* or *Skip This Version*.
+  When a daily check finds one while you're busy, it doesn't pop up behind other apps: the menu bar panel shows
+  *Update to DockState x.y.z…* and a notification appears (if notifications are allowed).
+- **Download and install updates automatically** (off by default, only with automatic checks) downloads in the
+  background and installs when you quit DockState or restart your Mac.
+- **Every update is verified** before it's installed: its EdDSA signature must match the key built into
+  DockState (checked before the DMG is even opened), and the new app's code signature must be valid. A
+  tampered or wrongly signed update is refused and nothing changes.
+- Only stable releases are offered (pre-releases are never the "latest" release the feed comes from), and only
+  a newer version becomes the latest release. Pre-release builds don't update themselves; Settings says so.
+- Updating keeps the Accessibility permission: releases are signed with the same Developer ID.
 
 ## Not supported (by design, without private APIs)
 
