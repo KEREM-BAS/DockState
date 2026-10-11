@@ -77,3 +77,33 @@ struct CardBackground: ViewModifier {
 extension View {
     func card(radius: CGFloat = 12) -> some View { modifier(CardBackground(radius: radius)) }
 }
+
+/// Prominent button for non-activating panels, where `.borderedProminent` renders in the
+/// inactive (grey) style because the panel never becomes key.
+struct AccentButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 12.5, weight: .medium))
+            .foregroundStyle(.white)
+            .padding(.vertical, 4)
+            .padding(.horizontal, 8)
+            .background(Color.accentColor.opacity(configuration.isPressed ? 0.8 : 1), in: RoundedRectangle(cornerRadius: 6))
+            .opacity(isEnabled ? 1 : 0.5)
+    }
+}
+
+/// Secondary counterpart of `AccentButtonStyle`.
+struct PanelButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 12.5))
+            .padding(.vertical, 4)
+            .padding(.horizontal, 8)
+            .background(Color.primary.opacity(configuration.isPressed ? 0.16 : 0.09), in: RoundedRectangle(cornerRadius: 6))
+            .opacity(isEnabled ? 1 : 0.45)
+    }
+}

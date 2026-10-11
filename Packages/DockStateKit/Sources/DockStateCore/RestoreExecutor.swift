@@ -22,6 +22,13 @@ public struct UndoEntry: Sendable, Equatable {
     public var appName: String
     public var before: Frame
     public var after: Frame
+
+    public init(window: LiveWindowID, appName: String, before: Frame, after: Frame) {
+        self.window = window
+        self.appName = appName
+        self.before = before
+        self.after = after
+    }
 }
 
 /// Everything needed to put the windows of one restore back.
@@ -30,12 +37,24 @@ public struct UndoRecord: Sendable, Equatable {
     public var workspaceName: String
     public var date: Date
     public var entries: [UndoEntry]
+
+    public init(workspaceID: UUID, workspaceName: String, date: Date, entries: [UndoEntry]) {
+        self.workspaceID = workspaceID
+        self.workspaceName = workspaceName
+        self.date = date
+        self.entries = entries
+    }
 }
 
 public struct RestoreResult: Sendable, Equatable {
     public struct Failure: Sendable, Equatable {
         public var saved: SavedWindow
         public var reason: SkipReason
+
+        public init(saved: SavedWindow, reason: SkipReason) {
+            self.saved = saved
+            self.reason = reason
+        }
     }
 
     public var workspaceID: UUID
@@ -46,6 +65,19 @@ public struct RestoreResult: Sendable, Equatable {
     public var notRestored: [Failure]
     public var undo: UndoRecord
     public var automatic: Bool
+
+    public init(
+        workspaceID: UUID, workspaceName: String, movedCount: Int, alreadyInPlaceCount: Int,
+        notRestored: [Failure], undo: UndoRecord, automatic: Bool
+    ) {
+        self.workspaceID = workspaceID
+        self.workspaceName = workspaceName
+        self.movedCount = movedCount
+        self.alreadyInPlaceCount = alreadyInPlaceCount
+        self.notRestored = notRestored
+        self.undo = undo
+        self.automatic = automatic
+    }
 }
 
 public struct UndoResult: Sendable, Equatable {

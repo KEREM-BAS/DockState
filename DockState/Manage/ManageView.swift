@@ -9,50 +9,57 @@ struct ManageView: View {
 
     var body: some View {
         @Bindable var actions = actions
-        NavigationSplitView {
-            List(selection: $actions.manageSelection) {
-                Section(String(localized: "Workspaces")) {
-                    ForEach(model.workspaces) { ws in
-                        HStack {
-                            Text(verbatim: ws.name)
-                            Spacer()
-                            if model.match(for: ws).quality.isRecognized {
-                                Text("connected").font(.system(size: 10)).foregroundStyle(.secondary)
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                List(selection: $actions.manageSelection) {
+                    Section(String(localized: "Workspaces")) {
+                        ForEach(model.workspaces) { ws in
+                            HStack {
+                                Text(verbatim: ws.name)
+                                Spacer()
+                                if model.match(for: ws).quality.isRecognized {
+                                    Text("connected").font(.system(size: 10)).foregroundStyle(.secondary)
+                                }
                             }
-                        }
-                        .tag(ws.id)
-                        .contextMenu {
-                            Button(String(localized: "Delete"), role: .destructive) { model.delete(ws) }
+                            .tag(ws.id)
+                            .contextMenu {
+                                Button(String(localized: "Delete"), role: .destructive) { model.delete(ws) }
+                            }
                         }
                     }
                 }
-            }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 260)
-            .safeAreaInset(edge: .bottom) {
+                .listStyle(.sidebar)
                 Button { actions.showSave() } label: {
                     Label(String(localized: "Save Current Layout…"), systemImage: "plus")
                 }
                 .buttonStyle(.borderless)
                 .disabled(!model.permissionGranted)
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
             }
-        } detail: {
-            if let id = actions.manageSelection, let ws = model.workspace(id: id) {
-                WorkspaceDetail(workspace: ws)
-            } else {
-                ContentUnavailableView {
-                    Label(String(localized: "No workspaces yet"), systemImage: "rectangle.on.rectangle")
-                } description: {
-                    Text("Arrange your windows, then save the layout.")
-                } actions: {
-                    Button(String(localized: "Save Current Layout…")) { actions.showSave() }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(!model.permissionGranted)
+            .frame(width: 210)
+            .background(.regularMaterial)
+
+            Divider()
+
+            Group {
+                if let id = actions.manageSelection, let ws = model.workspace(id: id) {
+                    WorkspaceDetail(workspace: ws).id(ws.id)
+                } else {
+                    VStack(spacing: 8) {
+                        Image(systemName: "rectangle.on.rectangle").font(.system(size: 32)).foregroundStyle(.tertiary)
+                        Text("No workspaces yet").font(.system(size: 13, weight: .semibold))
+                        Text("Arrange your windows, then save the layout.").font(.system(size: 13)).foregroundStyle(.secondary)
+                        Button(String(localized: "Save Current Layout…")) { actions.showSave() }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(!model.permissionGranted)
+                            .padding(.top, 6)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(minWidth: 820, minHeight: 500)
+        .frame(minWidth: 860, minHeight: 520)
     }
 }
 
@@ -68,6 +75,41 @@ private struct WorkspaceDetail: View {
         let match = model.match(for: workspace)
         let connected = match.quality.isRecognized
         let plan = connected ? model.plan(for: workspace) : nil
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                TextField(String(localized: "Name"), text: $editingName)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 14, weight: .semibold))
+                    .focused($nameFocused)
+                    .onSubmit { model.rename(workspace, to: editingName) }
+                Button(String(localized: "Update from Current Layout")) {
+                    Task { await model.updateFromCurrentLayout(workspace) }
+                }
+                .disabled(!connected || !model.permissionGranted)
+                .help(String(localized: "Replace the saved positions with how windows are arranged now."))
+                Button(String(localized: "Restore…")) { actions.showPreview(workspace) }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!model.permissionGranted || match.quality == .none)
+                Button(String(localized: "Delete"), role: .destructive) { confirmDelete = true }
+                    .help(String(localized: "Delete this workspace"))
+            }
+            .controlSize(.small)
+            .padding(.horizontal, 16)
+            .frame(height: 44)
+            Divider()
+            detailBody(connected: connected, plan: plan)
+        }
+        .onAppear { editingName = workspace.name }
+        .onChange(of: workspace.id) { editingName = workspace.name }
+        .onChange(of: nameFocused) { _, focused in if !focused { model.rename(workspace, to: editingName) } }
+        .confirmationDialog(String(localized: "Delete “\(workspace.name)”?"), isPresented: $confirmDelete) {
+            Button(String(localized: "Delete"), role: .destructive) { model.delete(workspace) }
+        } message: {
+            Text("Your windows won’t be affected. You can undo right after deleting.")
+        }
+    }
+
+    private func detailBody(connected: Bool, plan: RestorePlan?) -> some View {
         ScrollView {
             HStack(alignment: .top, spacing: 20) {
                 VStack(alignment: .leading, spacing: 14) {
@@ -118,38 +160,6 @@ private struct WorkspaceDetail: View {
                 }
             }
             .padding(20)
-        }
-        .navigationTitle(workspace.name)
-        .toolbar {
-            ToolbarItem(placement: .navigation) {
-                TextField(String(localized: "Name"), text: $editingName)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 14, weight: .semibold))
-                    .focused($nameFocused)
-                    .onSubmit { model.rename(workspace, to: editingName) }
-                    .frame(minWidth: 140)
-            }
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button(String(localized: "Update from Current Layout")) {
-                    Task { await model.updateFromCurrentLayout(workspace) }
-                }
-                .disabled(!connected || !model.permissionGranted)
-                .help(String(localized: "Replace the saved positions with how windows are arranged now."))
-                Button(String(localized: "Restore…")) { actions.showPreview(workspace) }
-                    .disabled(!model.permissionGranted || match.quality == .none)
-                Button(role: .destructive) { confirmDelete = true } label: {
-                    Label(String(localized: "Delete"), systemImage: "trash")
-                }
-                .help(String(localized: "Delete this workspace"))
-            }
-        }
-        .onAppear { editingName = workspace.name }
-        .onChange(of: workspace.id) { editingName = workspace.name }
-        .onChange(of: nameFocused) { _, focused in if !focused { model.rename(workspace, to: editingName) } }
-        .confirmationDialog(String(localized: "Delete “\(workspace.name)”?"), isPresented: $confirmDelete) {
-            Button(String(localized: "Delete"), role: .destructive) { model.delete(workspace) }
-        } message: {
-            Text("Your windows won’t be affected. You can undo right after deleting.")
         }
     }
 

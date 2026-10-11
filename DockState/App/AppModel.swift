@@ -47,6 +47,27 @@ final class AppModel {
         displays = SystemDisplays.current()
     }
 
+    #if DEBUG
+    @ObservationIgnored private(set) var isDemo = false
+
+    /// Replaces live data with the fictional desk in `DemoData` (screenshots only).
+    func loadDemo() {
+        isDemo = true
+        displays = DemoData.displays
+        workspaces = DemoData.workspaces()
+        liveWindows = DemoData.liveWindows(arranged: UserDefaults.standard.bool(forKey: "DockStateDemoArranged"))
+        runningApps = DemoData.runningApps()
+        permissionGranted = true
+        settings.hasCompletedOnboarding = true
+    }
+
+    func loadDemoResult() {
+        guard let ws = workspaces.first else { return }
+        lastResult = DemoData.lastResult(workspace: ws)
+        undoRecord = lastResult?.undo
+    }
+    #endif
+
     // MARK: - Lifecycle
 
     func start() {
@@ -85,6 +106,9 @@ final class AppModel {
     }
 
     func checkPermission() {
+        #if DEBUG
+        if isDemo { return }
+        #endif
         let granted = AccessibilityPermission.isGranted
         guard granted != permissionGranted else { return }
         permissionGranted = granted
@@ -110,6 +134,9 @@ final class AppModel {
 
     /// Re-reads displays and windows. Window reads happen off the main thread.
     func refresh() async {
+        #if DEBUG
+        if isDemo { return }
+        #endif
         displays = SystemDisplays.current()
         runningApps = AccessibilityWindowSystem.runningApps()
         guard permissionGranted else { liveWindows = []; return }

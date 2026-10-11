@@ -41,7 +41,8 @@ struct ResultCard: View {
                                     Button(String(localized: "Open & Place")) {
                                         Task { await model.openAndPlace(bundleID: failure.saved.bundleID, workspace: ws) }
                                     }
-                                    .controlSize(.small)
+                                    .buttonStyle(PanelButtonStyle())
+                                    .fixedSize()
                                 }
                             }
                             .padding(.horizontal, 10).padding(.vertical, 7)
@@ -56,9 +57,10 @@ struct ResultCard: View {
                 }
                 HStack(spacing: 6) {
                     Button { actions.undo() } label: { Text("Undo").frame(maxWidth: .infinity) }
+                        .buttonStyle(PanelButtonStyle())
                         .disabled(!model.canUndo)
                     Button { onClose() } label: { Text("Done").frame(maxWidth: .infinity) }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(AccentButtonStyle())
                 }
             }
             .padding(16)
