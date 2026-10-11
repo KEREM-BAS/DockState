@@ -58,8 +58,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #endif
         if !model.settings.hasCompletedOnboarding {
             actions.showOnboarding()
-        } else if let issue = model.storeIssue {
-            actions.reportStoreIssue(issue)
+        } else {
+            if let issue = model.storeIssue { actions.reportStoreIssue(issue) }
+            // Without permission DockState can do nothing; say so instead of only badging
+            // the menu bar icon (e.g. after the permission was reset or revoked).
+            if !model.permissionGranted { actions.requirePermission(then: nil) }
         }
     }
 

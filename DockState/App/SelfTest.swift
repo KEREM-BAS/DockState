@@ -155,6 +155,13 @@ enum SelfTest {
 
         // Put the window back where the user had it.
         _ = await model.windowSystem.setFrame(original, of: windowID)
+
+        // "Reset Permission" runs tccutil from inside the app. Only on the throw-away test
+        // app, which never has an Accessibility entry worth keeping.
+        if bundleID == "app.dockstate.testwindow" {
+            check(await AccessibilityPermission.reset(bundleID: bundleID), "permission reset works from the app")
+            check(await !AccessibilityPermission.reset(bundleID: "app.dockstate.not-installed"), "permission reset reports failure")
+        }
         try? FileManager.default.removeItem(at: tmp)
         UserDefaults().removePersistentDomain(forName: "dockstate.selftest")
         log.append(log.contains { $0.hasPrefix("FAIL") } ? "RESULT: FAIL" : "RESULT: PASS")

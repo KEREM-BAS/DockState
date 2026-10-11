@@ -29,6 +29,8 @@ final class AppSettings {
     /// Place windows of apps opened after a restore (see AppModel.placeLateApp).
     var placeLateApps: Bool { didSet { defaults.set(placeLateApps, forKey: Keys.placeLate) } }
     var didPromptForAccessibility: Bool { didSet { defaults.set(didPromptForAccessibility, forKey: Keys.prompted) } }
+    /// This app was trusted at some point; missing permission later suggests a stale entry.
+    var permissionWasGranted: Bool { didSet { defaults.set(permissionWasGranted, forKey: Keys.wasGranted) } }
     /// Global shortcuts take over the same keys in every other app, so they are off until
     /// the user turns them on.
     var globalShortcutsEnabled: Bool { didSet { defaults.set(globalShortcutsEnabled, forKey: Keys.shortcuts) } }
@@ -47,6 +49,7 @@ final class AppSettings {
         // Choosing to restore a workspace means wanting its apps: open them by default.
         appNotRunningPolicy = defaults.string(forKey: Keys.notRunning).flatMap(AppNotRunningPolicy.init) ?? .openFirst
         didPromptForAccessibility = defaults.bool(forKey: Keys.prompted)
+        permissionWasGranted = defaults.bool(forKey: Keys.wasGranted)
         placeLateApps = defaults.bool(forKey: Keys.placeLate)
         checkForUpdates = defaults.bool(forKey: Keys.updates)
         keepWindowsOnTop = defaults.bool(forKey: Keys.onTop)
@@ -67,6 +70,7 @@ final class AppSettings {
         static let missing = "missingDisplayPolicy"
         static let notRunning = "appNotRunningPolicy"
         static let prompted = "didPromptForAccessibility"
+        static let wasGranted = "permissionWasGranted"
         static let placeLate = "placeLateApps"
         static let updates = "checkForUpdates"
         static let onTop = "keepWindowsOnTop"
