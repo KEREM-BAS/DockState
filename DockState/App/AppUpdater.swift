@@ -145,6 +145,12 @@ extension AppUpdater: SPUUpdaterDelegate {
                  immediateInstallationBlock immediateInstallHandler: @escaping () -> Void) -> Bool {
         #if DEBUG || UPDATE_TEST
         if UpdateTest.isRequested {
+            if UpdateTest.quitsToInstall {
+                // Sparkle installs it as the app quits, without relaunching.
+                UpdateTest.record("quitting to install \(item.displayVersionString)")
+                DispatchQueue.main.async { NSApp.terminate(nil) }
+                return false
+            }
             UpdateTest.record("installing \(item.displayVersionString)")
             immediateInstallHandler()
             return true
@@ -203,9 +209,11 @@ extension AppUpdater: @preconcurrency SPUStandardUserDriverDelegate {
 /// starts the updater in a development build, checks right away and installs a found
 /// update immediately, writing each step to the log file. Pass the feed with
 /// `-SUFeedURL <url> -SUEnableAutomaticChecks YES -SUAutomaticallyUpdate YES`.
+/// `-DockStateUpdateTestQuit YES` quits instead, so Sparkle installs without relaunching.
 @MainActor
 enum UpdateTest {
     static var isRequested: Bool { UserDefaults.standard.bool(forKey: "DockStateUpdateTest") }
+    static var quitsToInstall: Bool { UserDefaults.standard.bool(forKey: "DockStateUpdateTestQuit") }
 
     static func begin(_ updater: SPUUpdater) {
         record("started \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")")
