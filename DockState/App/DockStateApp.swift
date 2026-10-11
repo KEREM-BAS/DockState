@@ -19,9 +19,19 @@ struct DockStateApp: App {
 
 private struct MenuBarLabel: View {
     var model: AppModel
+    @State private var frame = 0
 
     var body: some View {
-        Image(nsImage: MenuBarIcon.image(badge: model.needsAttention))
-            .accessibilityLabel(model.needsAttention ? Text("DockState, needs attention") : Text(verbatim: "DockState"))
+        let state = model.menuBarState
+        Image(nsImage: MenuBarIcon.image(for: state, frame: frame))
+            .accessibilityLabel(Text(MenuBarIcon.accessibilityDescription(for: state)))
+            .task(id: state == .restoring) {
+                // Animate only while restoring; no timers otherwise.
+                guard state == .restoring else { frame = 0; return }
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(120))
+                    frame += 1
+                }
+            }
     }
 }

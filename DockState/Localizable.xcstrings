@@ -433,6 +433,16 @@
         }
       }
     },
+    "All in place": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her şey yerinde"
+          }
+        }
+      }
+    },
     "All saved displays are connected, plus %lld other": {
       "localizations": {
         "en": {
@@ -911,12 +921,50 @@
         }
       }
     },
-    "DockState, needs attention": {
+    "DockState, %lld windows out of place": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "DockState, %lld window out of place"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "DockState, %lld windows out of place"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState, %lld pencere yerinde değil"
+          }
+        }
+      }
+    },
+    "DockState, needs Accessibility permission": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "DockState, ilgi bekliyor"
+            "value": "DockState, Erişilebilirlik izni gerekiyor"
+          }
+        }
+      }
+    },
+    "DockState, restoring windows": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState, pencereler geri yükleniyor"
           }
         }
       }
@@ -1213,6 +1261,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pencereleri taşımak ve boyutlandırmak için gerekli"
+          }
+        }
+      }
+    },
+    "Needs permission": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İzin gerekiyor"
           }
         }
       }
@@ -1739,6 +1797,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Geri Yükle…"
+          }
+        }
+      }
+    },
+    "Restoring": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri yükleniyor"
           }
         }
       }
@@ -2329,6 +2397,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pencereler geri taşındı"
+          }
+        }
+      }
+    },
+    "Windows out of place": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yerinde olmayan pencereler"
           }
         }
       }
