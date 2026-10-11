@@ -96,10 +96,15 @@ private struct StatusCard: View {
                     String(localized: "Arrange your windows, then save them."), .save)
         }
         if let candidate = model.recognized {
-            let moves = model.plan(for: candidate.workspace).moves.count
-            if moves > 0 {
+            let plan = model.plan(for: candidate.workspace)
+            let moves = plan.moves.count
+            let apps = model.appsToOpen(for: plan).count
+            if moves > 0 || apps > 0 {
+                var parts: [String] = []
+                if moves > 0 { parts.append(String(localized: "\(moves) windows are out of place")) }
+                if apps > 0 { parts.append(String(localized: "\(apps) apps aren’t open")) }
                 return (.green, String(localized: "These displays match \(candidate.workspace.name)"),
-                        String(localized: "\(moves) windows are out of place"), .match(candidate.workspace))
+                        parts.joined(separator: " · "), .match(candidate.workspace))
             }
             return (.green, String(localized: "\(candidate.workspace.name) is in place"),
                     String(localized: "Every saved window is where you left it."), .info)

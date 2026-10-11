@@ -52,6 +52,15 @@ public struct RestorePlan: Sendable, Equatable {
     public var moves: [PlanItem] { items.filter { if case .move = $0.kind { true } else { false } } }
     public var inPlace: [PlanItem] { items.filter { if case .inPlace = $0.kind { true } else { false } } }
     public var skipped: [PlanItem] { items.filter { $0.skipReason != nil } }
+
+    /// Apps with saved windows that aren't running, in plan order, each once.
+    public var missingApps: [String] {
+        var seen = Set<String>()
+        return items.compactMap { item in
+            guard item.skipReason == .appNotRunning, seen.insert(item.saved.bundleID).inserted else { return nil }
+            return item.saved.bundleID
+        }
+    }
 }
 
 /// Where a restore actually left a window, so a window that can't take the exact target

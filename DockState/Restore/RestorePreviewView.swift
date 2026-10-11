@@ -71,10 +71,10 @@ struct RestorePreviewView: View {
                 Spacer()
                 Button(String(localized: "Cancel")) { actions.closePreview() }
                     .keyboardShortcut(.cancelAction)
-                Button(restoreLabel(plan.moves.count)) { actions.restore(workspace) }
+                Button(restoreLabel(plan.moves.count + model.windowsFromAppsToOpen(for: plan).count)) { actions.restore(workspace) }
                     .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
-                    .disabled(plan.moves.isEmpty || model.isBusy)
+                    .disabled((plan.moves.isEmpty && model.appsToOpen(for: plan).isEmpty) || model.isBusy)
             }
             .controlSize(.large)
             .padding(.horizontal, 20).padding(.vertical, 12)
@@ -124,11 +124,18 @@ struct RestorePreviewView: View {
             guard let w = item.liveWindow else { continue }
             result.append(MapBox(id: w.id.description, frame: w.frame, color: AppStyle.color(for: w.bundleID), label: w.appName, style: .solid))
         }
+        let opening = Set(model.windowsFromAppsToOpen(for: plan).map(\.id))
         for item in plan.skipped {
             guard let display = plan.displayMatch.mapping[item.saved.displayID] else { continue }
             let frame = item.saved.frameInDisplay.offsetBy(dx: display.frame.x, dy: display.frame.y)
-            result.append(MapBox(id: "s-\(item.saved.id)", frame: frame, color: .clear,
-                                 label: String(localized: "\(item.saved.appName) · not restored"), style: .missing))
+            if opening.contains(item.id) {
+                // Its app opens first, then the window goes here.
+                result.append(MapBox(id: "s-\(item.saved.id)", frame: frame, color: AppStyle.color(for: item.saved.bundleID),
+                                     label: String(localized: "\(item.saved.appName) · opens"), style: .excluded))
+            } else {
+                result.append(MapBox(id: "s-\(item.saved.id)", frame: frame, color: .clear,
+                                     label: String(localized: "\(item.saved.appName) · not restored"), style: .missing))
+            }
         }
         return result
     }
@@ -153,9 +160,19 @@ private struct PlanList: View {
                         .font(.system(size: 12)).foregroundStyle(.secondary)
                         .padding(.horizontal, 16).padding(.vertical, 2)
                 }
-                if !plan.skipped.isEmpty {
-                    header(String(localized: "Won’t restore · \(plan.skipped.count)"), color: .orange)
-                    ForEach(plan.skipped) { item in
+                let opening = model.windowsFromAppsToOpen(for: plan)
+                let openingIDs = Set(opening.map(\.id))
+                let notRestored = plan.skipped.filter { !openingIDs.contains($0.id) }
+                if !opening.isEmpty {
+                    header(String(localized: "Will open · \(Set(opening.map(\.saved.bundleID)).count)"))
+                    ForEach(opening) { item in
+                        row(item.saved, detail: String(localized: "Not open yet"),
+                            trailing: "→ \(plan.displayMatch.mapping[item.saved.displayID]?.name ?? "")")
+                    }
+                }
+                if !notRestored.isEmpty {
+                    header(String(localized: "Won’t restore · \(notRestored.count)"), color: .orange)
+                    ForEach(notRestored) { item in
                         HStack(spacing: 9) {
                             AppIconView(bundleID: item.saved.bundleID, size: 16).opacity(0.5)
                             VStack(alignment: .leading, spacing: 1) {

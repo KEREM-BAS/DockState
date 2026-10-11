@@ -319,3 +319,25 @@ extension Frame {
     mutating func size(_ w: Double, _ h: Double) { width = w; height = h }
     mutating func origin(_ nx: Double, _ ny: Double) { x = nx; y = ny }
 }
+
+@Suite struct MissingAppsTests {
+    @Test func listsEachMissingAppOnce() {
+        let original = Scenario.homeDeskWindows()
+        let ws = Scenario.save(original)
+        // Safari (two windows) and Terminal were quit.
+        let now = original.filter { $0.bundleID != "com.apple.Safari" && $0.bundleID != "com.apple.Terminal" }
+        let plan = RestorePlanner.plan(workspace: ws, currentDisplays: Fixtures.homeDisplays, liveWindows: now,
+                                       runningBundleIDs: Scenario.running(now), missingDisplayPolicy: .leaveInPlace)
+        #expect(plan.missingApps == ["com.apple.Terminal", "com.apple.Safari"])
+    }
+
+    @Test func excludedWindowsDontCount() {
+        let original = Scenario.homeDeskWindows()
+        var ws = Scenario.save(original)
+        for i in ws.windows.indices where ws.windows[i].bundleID == "com.apple.Terminal" { ws.windows[i].isExcluded = true }
+        let now = original.filter { $0.bundleID != "com.apple.Terminal" }
+        let plan = RestorePlanner.plan(workspace: ws, currentDisplays: Fixtures.homeDisplays, liveWindows: now,
+                                       runningBundleIDs: Scenario.running(now), missingDisplayPolicy: .leaveInPlace)
+        #expect(plan.missingApps.isEmpty)
+    }
+}

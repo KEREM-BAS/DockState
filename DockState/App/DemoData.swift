@@ -57,7 +57,8 @@ enum DemoData {
     /// With `arranged`, every window sits where it was saved (for the first-save screenshot).
     static func liveWindows(arranged: Bool = false) -> [LiveWindow] {
         var result: [LiveWindow] = []
-        for (i, w) in saved.enumerated() where arranged || w.app != "Figma" {
+        // After reconnecting, Figma (not installed here) and Notes were quit.
+        for (i, w) in saved.enumerated() where arranged || !quitApps.contains(w.app) {
             var frame = w.frame.offsetBy(dx: w.display.frame.x, dy: w.display.frame.y)
             if !arranged, w.display.id != macbook.id {
                 let mb = macbook.frame
@@ -69,8 +70,10 @@ enum DemoData {
         return result
     }
 
+    private static let quitApps: Set<String> = ["Figma", "Notes"]
+
     static func runningApps() -> [RunningApp] {
-        Set(saved.filter { $0.app != "Figma" }.map(\.bundle)).sorted().enumerated().map {
+        Set(saved.filter { !quitApps.contains($0.app) }.map(\.bundle)).sorted().enumerated().map {
             RunningApp(pid: 9000 + Int32($0.offset), bundleID: $0.element, name: $0.element)
         }
     }
