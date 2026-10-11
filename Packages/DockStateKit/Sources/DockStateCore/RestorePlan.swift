@@ -54,22 +54,40 @@ public struct RestorePlan: Sendable, Equatable {
     public var skipped: [PlanItem] { items.filter { $0.skipReason != nil } }
 }
 
+/// Where a restore actually left a window, so a window that can't take the exact target
+/// size (minimum sizes, character grids) still counts as "in place" afterwards.
+public struct SettledPlacement: Sendable, Equatable {
+    public var target: Frame
+    public var actual: Frame
+
+    public init(target: Frame, actual: Frame) {
+        self.target = target
+        self.actual = actual
+    }
+}
+
 public enum RestorePlanner {
+    /// - Parameter settled: frames the last restore achieved per live window (see `SettledPlacement`).
     public static func plan(
         workspace: Workspace, currentDisplays: [DisplayDescriptor], liveWindows: [LiveWindow],
         runningBundleIDs: Set<String>, missingDisplayPolicy: MissingDisplayPolicy,
-        tolerance: Double = 2
+        settled: [LiveWindowID: SettledPlacement] = [:]
     ) -> RestorePlan {
         let match = DisplayMatcher.match(saved: workspace.displays, current: currentDisplays)
         let mainDisplay = currentDisplays.first(where: \.isMain) ?? currentDisplays.first
-        let candidates = workspace.windows.filter { !$0.isExcluded }
 
+        // Excluded windows take part in matching so they keep their own live window —
+        // otherwise that window could be mistaken for another saved window and moved.
         let outcomes = WindowMatcher.match(
-            saved: candidates, live: liveWindows, runningBundleIDs: runningBundleIDs,
+            saved: workspace.windows, live: liveWindows, runningBundleIDs: runningBundleIDs,
             expectedDisplays: match.mapping.mapValues(\.frame))
 
         var claimed = Set<LiveWindowID>()
-        let items: [PlanItem] = candidates.map { saved in
+        for saved in workspace.windows where saved.isExcluded {
+            if case .matched(let w) = outcomes[saved.id] { claimed.insert(w.id) }
+        }
+
+        let items: [PlanItem] = workspace.windows.filter { !$0.isExcluded }.map { saved in
             func skip(_ r: SkipReason) -> PlanItem { PlanItem(saved: saved, kind: .skip(r)) }
             let window: LiveWindow
             switch outcomes[saved.id] ?? .notFound {
@@ -87,31 +105,49 @@ public enum RestorePlanner {
             let target: Frame
             let displayID: String
             if let current = match.mapping[saved.displayID] {
-                target = Placement.target(for: saved.frameInDisplay, from: savedDisplay, onto: current)
+                target = Placement.target(for: saved.frameInDisplay, from: savedDisplay, onto: current, allDisplays: currentDisplays)
                 displayID = current.id
             } else if missingDisplayPolicy == .useMainDisplay, let main = mainDisplay {
-                target = Placement.target(for: saved.frameInDisplay, from: savedDisplay, onto: main, forceProportional: true)
+                target = Placement.target(for: saved.frameInDisplay, from: savedDisplay, onto: main,
+                                          allDisplays: currentDisplays, forceProportional: true)
                 displayID = main.id
             } else {
                 return skip(.displayMissing)
             }
-            if window.frame.isApproximatelyEqual(to: target, tolerance: tolerance) {
+            if window.frame.isPlacementEquivalent(to: target) || isSettled(window, target: target, settled: settled) {
                 return PlanItem(saved: saved, kind: .inPlace(window: window, displayID: displayID))
             }
             return PlanItem(saved: saved, kind: .move(window: window, target: target, displayID: displayID))
         }
         return RestorePlan(workspace: workspace, displayMatch: match, items: items)
     }
+
+    /// The last restore already sent this window to `target` and it hasn't moved since.
+    private static func isSettled(_ window: LiveWindow, target: Frame, settled: [LiveWindowID: SettledPlacement]) -> Bool {
+        guard let s = settled[window.id] else { return false }
+        return s.target.isApproximatelyEqual(to: target, tolerance: 1)
+            && window.frame.isApproximatelyEqual(to: s.actual, tolerance: 2)
+    }
 }
 
 /// Converts a display-relative saved frame into a global frame on a connected display.
 public enum Placement {
+    /// Height of the strip at the top of a window that must stay reachable (title bar).
+    static let titleBarHeight: Double = 30
+    /// Minimum width of that strip that must be on some display.
+    static let minimumGrabWidth: Double = 80
+
+    /// - Parameters:
+    ///   - allDisplays: every connected display; a window may legitimately straddle displays or
+    ///     hang off an edge, so it is only pulled in when its title bar would be unreachable.
+    ///   - forceProportional: map relative to the usable area even if sizes match (used when
+    ///     placing windows from a missing display onto another one).
     public static func target(
         for frameInDisplay: Frame, from saved: DisplayDescriptor, onto current: DisplayDescriptor,
-        forceProportional: Bool = false
+        allDisplays: [DisplayDescriptor] = [], forceProportional: Bool = false
     ) -> Frame {
         let sameSize = abs(saved.frame.width - current.frame.width) < 1 && abs(saved.frame.height - current.frame.height) < 1
-        var frame: Frame
+        let frame: Frame
         if sameSize && !forceProportional {
             frame = frameInDisplay.offsetBy(dx: current.frame.x, dy: current.frame.y)
         } else {
@@ -123,9 +159,20 @@ public enum Placement {
             let rw = frameInDisplay.width / max(sv.width, 1), rh = frameInDisplay.height / max(sv.height, 1)
             frame = Frame(x: cv.x + rx * cv.width, y: cv.y + ry * cv.height, width: rw * cv.width, height: rh * cv.height)
         }
-        frame = frame.clamped(into: current.frame)
-        // Keep the title bar below the menu bar so the window stays grabbable.
-        if frame.y < current.visibleFrame.y { frame.y = current.visibleFrame.y }
-        return frame.clamped(into: current.frame)
+        let areas = (allDisplays.isEmpty ? [current] : allDisplays).map(\.visibleFrame)
+        if isReachable(frame, on: areas) { return frame }
+        // Pull the window fully into the usable area of its display: size first, so the
+        // title bar can never end up under the menu bar.
+        return frame.clamped(into: current.visibleFrame)
+    }
+
+    /// Whether enough of the title bar is on a usable display area to grab the window.
+    static func isReachable(_ frame: Frame, on areas: [Frame]) -> Bool {
+        let strip = Frame(x: frame.x, y: frame.y, width: frame.width, height: titleBarHeight)
+        let needed = min(minimumGrabWidth, frame.width)
+        return areas.contains { area in
+            let hit = strip.intersection(area)
+            return hit.width >= needed && hit.height >= titleBarHeight * 0.66
+        }
     }
 }

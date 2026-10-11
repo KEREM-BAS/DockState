@@ -88,6 +88,8 @@ struct RestorePreviewView: View {
         case .exact, .sameDisplays:
             return total == 1 ? String(localized: "The saved display is connected")
                               : String(localized: "All \(total) saved displays are connected")
+        case .withExtraDisplays:
+            return String(localized: "All saved displays are connected, plus \(plan.displayMatch.extra.count) other")
         case .partial, .none:
             let connected = plan.displayMatch.mapping.count
             return String(localized: "\(connected) of \(total) saved displays connected")

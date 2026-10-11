@@ -24,21 +24,28 @@ public enum WindowMatcher {
     static func score(saved: SavedWindow, live: LiveWindow, expectedDisplay: Frame?, uniqueInApp: Bool) -> Double? {
         guard saved.bundleID == live.bundleID, live.isStandard else { return nil }
         var score = 0.0
+        var titlesDisagree = false
         if let a = saved.title?.trimmingCharacters(in: .whitespaces), !a.isEmpty,
            let b = live.title?.trimmingCharacters(in: .whitespaces), !b.isEmpty {
-            score += a == b ? 60 : 35 * titleSimilarity(a, b)
+            let similarity = a == b ? 1 : titleSimilarity(a, b)
+            score += a == b ? 60 : 35 * similarity
+            titlesDisagree = similarity == 0
         }
         let sw = saved.frameInDisplay.width, sh = saved.frameInDisplay.height
         let dw = abs(sw - live.frame.width) / max(sw, live.frame.width, 1)
         let dh = abs(sh - live.frame.height) / max(sh, live.frame.height, 1)
-        score += 20 * max(0, 1 - (dw + dh) * 2.5)
+        let sizeScore = 20 * max(0, 1 - (dw + dh) * 2.5)
+        score += sizeScore
         if let display = expectedDisplay, display.contains(x: live.frame.midX, y: live.frame.midY) { score += 10 }
         switch abs(saved.appOrder - live.appOrder) {
         case 0: score += 6
         case 1: score += 3
         default: break
         }
-        if uniqueInApp { score += 40 }
+        // Being the only window of the app is strong evidence — unless the titles have
+        // nothing in common and the size doesn't match either (another document, a
+        // welcome window, or the saved window is on another Space).
+        if uniqueInApp && !(titlesDisagree && sizeScore < 16) { score += 40 }
         return score
     }
 
@@ -91,6 +98,12 @@ public enum WindowMatcher {
                 for (k, other) in assignment.enumerated() where k != i {
                     guard let l = other, let skl = scores[k][l], let sil = scores[i][l], let skj = scores[k][j] else { continue }
                     if (sij + skl) - (sil + skj) < config.ambiguityMargin { ambiguous = true; break }
+                }
+                // Does a saved window that got nothing want this live window almost as much?
+                if !ambiguous {
+                    for (k, other) in assignment.enumerated() where k != i && other == nil {
+                        if let skj = scores[k][j], sij - skj < config.ambiguityMargin { ambiguous = true; break }
+                    }
                 }
                 // Would an unclaimed live window fit just as well?
                 if !ambiguous {

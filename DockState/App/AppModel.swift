@@ -24,6 +24,12 @@ final class AppModel {
     private(set) var runningApps: [RunningApp] = []
     private(set) var permissionGranted = AccessibilityPermission.isGranted
     private(set) var storeIssue: StoreLoadIssue?
+    /// The workspace file came from a newer DockState (or couldn't be backed up): changes
+    /// stay in memory until the user agrees to convert it.
+    private(set) var storeIsReadOnly = false
+    /// Frames the last restores achieved, so windows that can't take the exact size still
+    /// count as in place afterwards.
+    @ObservationIgnored private var settled: [LiveWindowID: SettledPlacement] = [:]
     private(set) var isBusy = false
 
     /// The outcome of the last restore, shown in the result card.
@@ -42,6 +48,7 @@ final class AppModel {
             let result = store.load()
             workspaces = result.workspaces
             storeIssue = result.issue
+            storeIsReadOnly = result.isReadOnly
             if let issue = result.issue { log.error("Store issue on load: \(String(describing: issue), privacy: .public)") }
         }
         displays = SystemDisplays.current()
@@ -159,7 +166,8 @@ final class AppModel {
     func plan(for workspace: Workspace) -> RestorePlan {
         RestorePlanner.plan(
             workspace: workspace, currentDisplays: displays, liveWindows: liveWindows,
-            runningBundleIDs: runningBundleIDs, missingDisplayPolicy: settings.missingDisplayPolicy)
+            runningBundleIDs: runningBundleIDs, missingDisplayPolicy: settings.missingDisplayPolicy,
+            settled: settled)
     }
 
     func match(for workspace: Workspace) -> DisplayMatch {
@@ -270,7 +278,7 @@ final class AppModel {
         if let clash = workspace(named: name), clash.id != target.id { return }
         var ws = target
         ws.name = name
-        replace(ws)
+        replace(ws, touch: false)
     }
 
     func setAutoMode(_ mode: AutoMode, for workspace: Workspace) {
@@ -303,6 +311,12 @@ final class AppModel {
         persist()
     }
 
+    private func markRestored(_ workspace: Workspace) {
+        guard var ws = self.workspace(id: workspace.id) else { return }
+        ws.lastRestoredAt = Date()
+        replace(ws, touch: false)
+    }
+
     /// Removes stored titles from every workspace (used when title matching is turned off).
     func purgeTitles() {
         workspaces = workspaces.map { $0.strippingTitles() }
@@ -317,8 +331,19 @@ final class AppModel {
         persist()
     }
 
+    /// Allows saving over a workspace file written by a newer DockState (a backup was kept).
+    func convertStoreToCurrentVersion() {
+        storeIsReadOnly = false
+        persist()
+    }
+
     private func persist() {
         guard let store else { return }
+        guard !storeIsReadOnly else {
+            log.info("Not saving: workspace file is read-only")
+            presenter?.toast(String(localized: "Changes aren’t saved: the workspace file is from a newer DockState."))
+            return
+        }
         do {
             try store.save(settings.useWindowTitles ? workspaces : workspaces.map { $0.strippingTitles() })
         } catch {
@@ -348,7 +373,9 @@ final class AppModel {
         let result = await RestoreExecutor.execute(plan, mover: windowSystem, automatic: automatic)
         log.info("Restore: moved \(result.movedCount, privacy: .public), not restored \(result.notRestored.count, privacy: .public)")
         if !result.undo.entries.isEmpty { undoRecord = result.undo }
+        settled.merge(result.undo.settledPlacements) { _, new in new }
         lastResult = result
+        markRestored(workspace)
         await refresh()
         presenter?.showResult()
     }
@@ -364,6 +391,7 @@ final class AppModel {
         ws.windows = ws.windows.filter { $0.bundleID == bundleID }
         let plan = plan(for: ws)
         let result = await RestoreExecutor.execute(plan, mover: windowSystem)
+        settled.merge(result.undo.settledPlacements) { _, new in new }
         if var record = undoRecord, record.workspaceID == workspace.id {
             record.entries += result.undo.entries
             undoRecord = record

@@ -63,11 +63,23 @@ enum SelfTest {
         let restored = await model.windowSystem.frame(of: target.id)
         check(restored.map { $0.isApproximatelyEqual(to: original, tolerance: 2) } ?? false, "restored to original frame (\(restored.map(\.description) ?? "nil"))")
         check(model.lastResult?.movedCount == 1, "result reports 1 moved")
+        if let current = model.workspace(id: ws.id) {
+            let after = model.plan(for: current)
+            check(after.moves.isEmpty, "nothing left to move after restoring (moves=\(after.moves.count))")
+        }
         check(model.canUndo, "undo available")
 
         await model.undoLastRestore()
         let undone = await model.windowSystem.frame(of: target.id)
         check(undone.map { $0.isApproximatelyEqual(to: displaced, tolerance: 2) } ?? false, "undo moved it back to the displaced frame (\(undone.map(\.description) ?? "nil"))")
+
+        // An excluded window is never planned for a move, even when it is out of place.
+        if var excluded = model.workspace(id: ws.id) {
+            excluded.windows = excluded.windows.map { var w = $0; w.isExcluded = true; return w }
+            await model.refresh()
+            let plan = model.plan(for: excluded)
+            check(plan.moves.isEmpty, "excluded window is not moved (moves=\(plan.moves.count))")
+        }
 
         // Put the window back where the user had it.
         _ = await model.windowSystem.setFrame(original, of: target.id)

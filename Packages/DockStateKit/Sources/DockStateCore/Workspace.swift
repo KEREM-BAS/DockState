@@ -71,11 +71,15 @@ public struct Workspace: Codable, Hashable, Sendable, Identifiable {
     public var windows: [SavedWindow]
     public var autoMode: AutoMode
     public var createdAt: Date
+    /// When the window layout was last saved (shown as "Saved …").
     public var updatedAt: Date
+    /// When the user last restored this workspace; breaks ties between workspaces saved
+    /// for the same displays.
+    public var lastRestoredAt: Date?
 
     public init(
         id: UUID = UUID(), name: String, displays: [DisplayDescriptor], windows: [SavedWindow],
-        autoMode: AutoMode = .ask, createdAt: Date = Date(), updatedAt: Date = Date()
+        autoMode: AutoMode = .ask, createdAt: Date = Date(), updatedAt: Date = Date(), lastRestoredAt: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -84,9 +88,10 @@ public struct Workspace: Codable, Hashable, Sendable, Identifiable {
         self.autoMode = autoMode
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.lastRestoredAt = lastRestoredAt
     }
 
-    enum CodingKeys: String, CodingKey { case id, name, displays, windows, autoMode, createdAt, updatedAt }
+    enum CodingKeys: String, CodingKey { case id, name, displays, windows, autoMode, createdAt, updatedAt, lastRestoredAt }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -98,6 +103,7 @@ public struct Workspace: Codable, Hashable, Sendable, Identifiable {
         autoMode = (try? c.decode(AutoMode.self, forKey: .autoMode)) ?? .ask
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         updatedAt = try c.decodeIfPresent(Date.self, forKey: .updatedAt) ?? createdAt
+        lastRestoredAt = try c.decodeIfPresent(Date.self, forKey: .lastRestoredAt)
     }
 
     public func display(id: String) -> DisplayDescriptor? { displays.first { $0.id == id } }

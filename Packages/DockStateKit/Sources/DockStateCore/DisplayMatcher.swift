@@ -4,8 +4,12 @@ import Foundation
 public enum SetupMatchQuality: Int, Comparable, Sendable {
     /// No saved display is connected.
     case none
-    /// Some saved displays are connected, or extra displays are attached.
+    /// Some saved displays are missing.
     case partial
+    /// Every saved display is connected, plus extra ones (Sidecar, a projector, the
+    /// laptop lid opened). Only for workspaces that include an external display — a
+    /// laptop-only workspace never "matches" a desk.
+    case withExtraDisplays
     /// Exactly the saved displays are connected, but arrangement or resolution changed.
     case sameDisplays
     /// Same displays, same arrangement, same resolution.
@@ -14,7 +18,7 @@ public enum SetupMatchQuality: Int, Comparable, Sendable {
     public static func < (a: Self, b: Self) -> Bool { a.rawValue < b.rawValue }
 
     /// Whether the setup counts as "the same desk" for suggestions and automation.
-    public var isRecognized: Bool { self >= .sameDisplays }
+    public var isRecognized: Bool { self >= .withExtraDisplays }
 }
 
 public struct DisplayMatch: Sendable, Equatable {
@@ -25,8 +29,8 @@ public struct DisplayMatch: Sendable, Equatable {
     /// Connected display ids that are not part of the saved setup.
     public var extra: [String]
     public var quality: SetupMatchQuality
-    /// True when two different assignments explain the displays equally well
-    /// (e.g. two identical monitors without serial numbers in identical positions).
+    /// True when a different assignment explains the displays (almost) equally well
+    /// (e.g. two identical monitors without serial numbers in the same positions).
     public var isAmbiguous: Bool
     public var score: Double
 
@@ -35,17 +39,33 @@ public struct DisplayMatch: Sendable, Equatable {
 
 /// Decides which connected display is which saved display.
 public enum DisplayMatcher {
+    /// Two assignments whose totals differ by less than this are indistinguishable.
+    static let ambiguityMargin = 1.0
+
     /// Score for "saved and current are the same physical display", or nil when impossible.
-    public static func pairScore(saved: DisplayDescriptor, current: DisplayDescriptor) -> Double? {
+    ///
+    /// `savedOrigin` / `currentOrigin` are the top-left corners of each setup's bounding box,
+    /// so positions are compared relative to the arrangement rather than to whichever
+    /// display happens to be the main one.
+    public static func pairScore(
+        saved: DisplayDescriptor, current: DisplayDescriptor,
+        savedOrigin: (x: Double, y: Double) = (0, 0), currentOrigin: (x: Double, y: Double) = (0, 0)
+    ) -> Double? {
         guard saved.isBuiltin == current.isBuiltin else { return nil }
         var score = 0.0
         if saved.isBuiltin {
             score += 100
         } else {
-            let sameModel = saved.vendorID == current.vendorID && saved.modelID == current.modelID
-            let virtual = saved.vendorID == 0 && current.vendorID == 0
-            if !sameModel && !(virtual && saved.name == current.name) { return nil }
-            score += sameModel ? 40 : 30
+            let unidentified = saved.vendorID == 0 && saved.modelID == 0 && current.vendorID == 0 && current.modelID == 0
+            if unidentified {
+                // Virtual displays (AirPlay, DisplayLink, some adapters) report no EDID ids;
+                // only the name can tell them apart.
+                guard saved.name == current.name else { return nil }
+                score += 30
+            } else {
+                guard saved.vendorID == current.vendorID && saved.modelID == current.modelID else { return nil }
+                score += 40
+            }
             if saved.serialNumber != 0 && current.serialNumber != 0 {
                 // EDID serials are unique per unit when present.
                 guard saved.serialNumber == current.serialNumber else { return nil }
@@ -57,10 +77,15 @@ public enum DisplayMatcher {
         if saved.pixelWidth == current.pixelWidth && saved.pixelHeight == current.pixelHeight { score += 5 }
         if saved.scale == current.scale { score += 2 }
         // Arrangement is the only way to tell identical monitors apart.
-        let dx = saved.frame.x - current.frame.x, dy = saved.frame.y - current.frame.y
+        let dx = (saved.frame.x - savedOrigin.x) - (current.frame.x - currentOrigin.x)
+        let dy = (saved.frame.y - savedOrigin.y) - (current.frame.y - currentOrigin.y)
         let distance = (dx * dx + dy * dy).squareRoot()
         score += 20 * max(0, 1 - distance / 3000)
         return score
+    }
+
+    static func origin(of displays: [DisplayDescriptor]) -> (x: Double, y: Double) {
+        (displays.map(\.frame.x).min() ?? 0, displays.map(\.frame.y).min() ?? 0)
     }
 
     public static func match(saved: [DisplayDescriptor], current: [DisplayDescriptor]) -> DisplayMatch {
@@ -68,25 +93,33 @@ public enum DisplayMatcher {
             return DisplayMatch(mapping: [:], missing: saved.map(\.id), extra: current.map(\.id),
                                 quality: .none, isAmbiguous: false, score: 0)
         }
-        let scores: [[Double?]] = saved.map { s in current.map { c in pairScore(saved: s, current: c) } }
+        let so = origin(of: saved), co = origin(of: current)
+        let scores: [[Double?]] = saved.map { s in
+            current.map { c in pairScore(saved: s, current: c, savedOrigin: so, currentOrigin: co) }
+        }
 
-        // Exhaustive search; setups have a handful of displays so this stays tiny.
-        // Objective: maximise matched count first, then total score.
-        var best: (count: Int, score: Double, assignment: [Int?])?
-        var bestTies = 0
+        // Exhaustive search over assignments; setups have a handful of displays.
+        // Objective: maximise matched count first, then total score. The runner-up with the
+        // same count tells us whether the answer is ambiguous.
+        typealias Candidate = (count: Int, score: Double, assignment: [Int?])
+        var best: Candidate?
+        var runnerUp: Candidate?
         var used = Array(repeating: false, count: current.count)
         var assignment = Array<Int?>(repeating: nil, count: saved.count)
 
+        func better(_ a: Candidate, than b: Candidate?) -> Bool {
+            guard let b else { return true }
+            return a.count > b.count || (a.count == b.count && a.score > b.score)
+        }
+
         func search(_ i: Int, _ count: Int, _ score: Double) {
             if i == saved.count {
-                if let b = best {
-                    if count > b.count || (count == b.count && score > b.score + 1e-9) {
-                        best = (count, score, assignment); bestTies = 0
-                    } else if count == b.count && abs(score - b.score) <= 1e-9 && assignment != b.assignment {
-                        bestTies += 1
-                    }
-                } else {
-                    best = (count, score, assignment)
+                let candidate: Candidate = (count, score, assignment)
+                if better(candidate, than: best) {
+                    runnerUp = best
+                    best = candidate
+                } else if better(candidate, than: runnerUp) {
+                    runnerUp = candidate
                 }
                 return
             }
@@ -101,6 +134,8 @@ public enum DisplayMatcher {
         search(0, 0, 0)
 
         guard let result = best else { return .empty }
+        let ambiguous = runnerUp.map { $0.count == result.count && result.count > 0 && result.score - $0.score < ambiguityMargin } ?? false
+
         var mapping: [String: DisplayDescriptor] = [:]
         var missing: [String] = []
         var matchedCurrent = Set<Int>()
@@ -123,13 +158,15 @@ public enum DisplayMatcher {
         let quality: SetupMatchQuality
         if mapping.isEmpty {
             quality = .none
-        } else if missing.isEmpty && extra.isEmpty {
-            quality = sameGeometry ? .exact : .sameDisplays
-        } else {
+        } else if !missing.isEmpty {
             quality = .partial
+        } else if !extra.isEmpty {
+            quality = saved.contains { !$0.isBuiltin } ? .withExtraDisplays : .partial
+        } else {
+            quality = sameGeometry ? .exact : .sameDisplays
         }
         return DisplayMatch(mapping: mapping, missing: missing, extra: extra, quality: quality,
-                            isAmbiguous: bestTies > 0, score: result.score)
+                            isAmbiguous: ambiguous, score: result.score)
     }
 }
 
@@ -141,13 +178,21 @@ public enum WorkspaceRecognizer {
     }
 
     /// All workspaces with their display match, best first.
+    ///
+    /// Several workspaces can be saved for the same desk. Among equally good matches the
+    /// order is: a workspace set to "Always restore", then the one restored most recently,
+    /// then the newest. Renaming or editing a workspace never changes which one wins.
     public static func rank(_ workspaces: [Workspace], current: [DisplayDescriptor]) -> [Candidate] {
         workspaces
             .map { Candidate(workspace: $0, match: DisplayMatcher.match(saved: $0.displays, current: current)) }
-            .sorted {
-                if $0.match.quality != $1.match.quality { return $0.match.quality > $1.match.quality }
-                if $0.match.score != $1.match.score { return $0.match.score > $1.match.score }
-                return $0.workspace.updatedAt > $1.workspace.updatedAt
+            .sorted { a, b in
+                if a.match.quality != b.match.quality { return a.match.quality > b.match.quality }
+                let aAlways = a.workspace.autoMode == .always, bAlways = b.workspace.autoMode == .always
+                if aAlways != bAlways { return aAlways }
+                let ar = a.workspace.lastRestoredAt ?? .distantPast, br = b.workspace.lastRestoredAt ?? .distantPast
+                if ar != br { return ar > br }
+                if a.workspace.createdAt != b.workspace.createdAt { return a.workspace.createdAt > b.workspace.createdAt }
+                return a.match.score > b.match.score
             }
     }
 
