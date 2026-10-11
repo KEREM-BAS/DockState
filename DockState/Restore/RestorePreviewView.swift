@@ -164,10 +164,10 @@ private struct PlanList: View {
                 let openingIDs = Set(opening.map(\.id))
                 let notRestored = plan.skipped.filter { !openingIDs.contains($0.id) }
                 if !opening.isEmpty {
-                    header(String(localized: "Will open · \(Set(opening.map(\.saved.bundleID)).count)"))
+                    header(String(localized: "Will open · \(opening.count)"))
                     ForEach(opening) { item in
                         row(item.saved, detail: String(localized: "Not open yet"),
-                            trailing: "→ \(plan.displayMatch.mapping[item.saved.displayID]?.name ?? "")")
+                            trailing: "→ \(plan.displayMatch.mapping[item.saved.displayID]?.name ?? model.displays.first(where: \.isMain)?.name ?? "")")
                     }
                 }
                 if !notRestored.isEmpty {
@@ -177,7 +177,7 @@ private struct PlanList: View {
                             AppIconView(bundleID: item.saved.bundleID, size: 16).opacity(0.5)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(verbatim: item.saved.appName).font(.system(size: 12))
-                                Text(Copy.reason(item.skipReason!, appName: item.saved.appName))
+                                Text(Copy.reason(item.skipReason!, appName: item.saved.appName, bundleID: item.saved.bundleID))
                                     .font(.system(size: 10.5)).foregroundStyle(.secondary)
                             }
                             Spacer()

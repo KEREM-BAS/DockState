@@ -85,8 +85,11 @@ final class FloatingPanel {
 
     private static func makePanel() -> NSPanel {
         let panel = NSPanel(contentRect: .zero, styleMask: [.nonactivatingPanel, .borderless], backing: .buffered, defer: true)
-        panel.level = .floating
+        // isFloatingPanel resets the level, so it comes first. One above .floating, so the
+        // result card stays above DockState's own windows when they're kept on top.
         panel.isFloatingPanel = true
+        panel.level = NSWindow.Level(rawValue: NSWindow.Level.floating.rawValue + 1)
+        panel.canHide = false
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = true

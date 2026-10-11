@@ -19,6 +19,9 @@ struct DockStateApp: App {
                 Button(String(localized: "Settings…")) { delegate.actions.showSettings() }
                     .keyboardShortcut(",", modifiers: .command)
             }
+            CommandGroup(replacing: .help) {
+                Button(String(localized: "Report an Issue")) { delegate.actions.openExternal(Links.issues) }
+            }
         }
     }
 }

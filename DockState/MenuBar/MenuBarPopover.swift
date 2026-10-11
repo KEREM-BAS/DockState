@@ -14,8 +14,18 @@ struct MenuBarPopover: View {
 
             if !model.workspaces.isEmpty {
                 SectionHeader(title: String(localized: "Workspaces"))
-                ForEach(model.workspaces) { ws in
-                    WorkspaceRow(workspace: ws, match: model.match(for: ws))
+                // Many workspaces scroll, so the commands below always stay on screen.
+                if model.workspaces.count > 6 {
+                    ScrollView {
+                        VStack(spacing: 1) {
+                            ForEach(model.workspaces) { ws in WorkspaceRow(workspace: ws, match: model.match(for: ws)) }
+                        }
+                    }
+                    .frame(height: 6 * 42)
+                } else {
+                    ForEach(model.workspaces) { ws in
+                        WorkspaceRow(workspace: ws, match: model.match(for: ws))
+                    }
                 }
             }
 

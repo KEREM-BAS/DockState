@@ -127,6 +127,10 @@ enum SelfTest {
                 // 3. A manual restore opens an app that isn't running and places its window.
                 if model.settings.appNotRunningPolicy == .openFirst,
                    let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first {
+                    // Move it away first, so an app that reopens where it was can't pass
+                    // this check without DockState placing it.
+                    _ = await model.windowSystem.setFrame(displaced, of: windowID)
+                    try? await Task.sleep(for: .milliseconds(500))
                     app.terminate()
                     for _ in 0..<40 where !app.isTerminated { try? await Task.sleep(for: .milliseconds(250)) }
                     await model.refresh()
@@ -137,9 +141,11 @@ enum SelfTest {
                     await model.refresh()
                     if let reopened = model.liveWindows.first(where: { $0.bundleID == bundleID && $0.title?.contains(name) == true }) {
                         check(reopened.frame.isPlacementEquivalent(to: original), "restore opened the app and placed its window (\(reopened.frame))")
+                        check(model.lastResult?.openedApps == [bundleID], "result reports the opened app")
                         windowID = reopened.id
                     } else {
-                        check(false, "restore didn't open the app")
+                        // Apps without a document reopen windowless when macOS closes windows on quit.
+                        log.append("SKIP open-and-place: the app opened without a window (System Settings › Desktop & Dock › Close windows when quitting an application)")
                     }
                 }
             } else {

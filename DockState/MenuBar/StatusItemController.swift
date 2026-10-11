@@ -16,7 +16,11 @@ final class StatusItemController: NSObject {
     private var animationTimer: Timer?
     private var animationFrame = 0
     private var outsideClickMonitor: Any?
+    private var insideClickMonitor: Any?
     private var resignObserver: NSObjectProtocol?
+    /// Tracked separately from `panel.isVisible`, which can lag (or stay false while the
+    /// app is hidden), so the icon's toggle and highlight never get out of sync.
+    private var isOpen = false
 
     init(model: AppModel, actions: AppActions) {
         self.model = model
@@ -49,13 +53,16 @@ final class StatusItemController: NSObject {
         if state == .restoring {
             // Animate only while restoring; no timers otherwise.
             if animationTimer == nil {
-                animationTimer = Timer.scheduledTimer(withTimeInterval: 0.12, repeats: true) { [weak self] _ in
+                let timer = Timer(timeInterval: 0.12, repeats: true) { [weak self] _ in
                     MainActor.assumeIsolated {
                         guard let self else { return }
                         self.animationFrame += 1
                         self.render(.restoring)
                     }
                 }
+                // Common modes: keep animating while a menu is open or a window is dragged.
+                RunLoop.main.add(timer, forMode: .common)
+                animationTimer = timer
             }
         } else {
             animationTimer?.invalidate()
@@ -75,7 +82,7 @@ final class StatusItemController: NSObject {
     // MARK: Panel
 
     @objc private func togglePanel(_ sender: Any?) {
-        panel.isVisible ? close() : open()
+        isOpen ? close() : open()
     }
 
     func open() {
@@ -86,14 +93,21 @@ final class StatusItemController: NSObject {
         // A fresh hosting view per opening, so the popover's refresh task runs every time.
         panel.setContent(content)
         let buttonFrame = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
+        // VoiceOver follows the active app; activating moves its focus into the panel.
+        if NSWorkspace.shared.isVoiceOverEnabled { NSApp.activate(ignoringOtherApps: true) }
         panel.show(below: buttonFrame)
+        isOpen = true
         button.highlight(true)
         startWatchingForDismissal()
+        NSAccessibility.post(element: panel, notification: .created)
     }
 
     func close() {
-        guard panel.isVisible else { return }
+        guard isOpen else { return }
+        isOpen = false
         panel.orderOut(nil)
+        // Drop the SwiftUI hierarchy so a hidden panel doesn't keep re-rendering.
+        panel.contentView = nil
         statusItem.button?.highlight(false)
         stopWatchingForDismissal()
     }
@@ -103,8 +117,17 @@ final class StatusItemController: NSObject {
     private func startWatchingForDismissal() {
         stopWatchingForDismissal()
         // A click anywhere outside DockState closes the panel, like a menu.
-        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] _ in
             MainActor.assumeIsolated { self?.close() }
+        }
+        // …and so does a click in DockState's own non-key panels (result card, toast).
+        // The icon itself is left to the toggle, or its mouse-up would reopen the panel.
+        insideClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] event in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if event.window !== self.panel, event.window !== self.statusItem.button?.window { self.close() }
+            }
+            return event
         }
         resignObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didResignKeyNotification, object: panel, queue: .main
@@ -116,6 +139,8 @@ final class StatusItemController: NSObject {
     private func stopWatchingForDismissal() {
         if let monitor = outsideClickMonitor { NSEvent.removeMonitor(monitor) }
         outsideClickMonitor = nil
+        if let monitor = insideClickMonitor { NSEvent.removeMonitor(monitor) }
+        insideClickMonitor = nil
         if let observer = resignObserver { NotificationCenter.default.removeObserver(observer) }
         resignObserver = nil
     }
@@ -132,6 +157,8 @@ final class MenuBarPanel: NSPanel {
         isFloatingPanel = true
         level = .popUpMenu
         hidesOnDeactivate = false
+        // Like a menu: unaffected by Hide DockState (⌘H) or Hide Others.
+        canHide = false
         isReleasedWhenClosed = false
         backgroundColor = .clear
         isOpaque = false
@@ -168,11 +195,14 @@ final class MenuBarPanel: NSPanel {
         setContentSize(hosting.fittingSize)
     }
 
-    /// Places the panel just below the status item, kept fully on its screen.
+    /// Places the panel just below the status item, kept on its screen.
     func show(below anchor: NSRect) {
-        let size = frame.size
         let screen = NSScreen.screens.first { $0.frame.contains(NSPoint(x: anchor.midX, y: anchor.midY)) } ?? NSScreen.main
         let visible = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+        // Never taller than the space under the menu bar (the workspace list scrolls).
+        let maxHeight = anchor.minY - 4 - (visible.minY + 8)
+        if frame.height > maxHeight { setContentSize(NSSize(width: frame.width, height: maxHeight)) }
+        let size = frame.size
         var x = anchor.midX - size.width / 2
         x = min(max(x, visible.minX + 8), visible.maxX - size.width - 8)
         let y = anchor.minY - size.height - 4

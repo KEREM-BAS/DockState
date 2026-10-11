@@ -32,7 +32,7 @@ struct ResultCard: View {
                                 AppIconView(bundleID: failure.saved.bundleID, size: 16)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(verbatim: failure.saved.appName).font(.system(size: 12))
-                                    Text(Copy.reason(failure.reason, appName: failure.saved.appName))
+                                    Text(Copy.reason(failure.reason, appName: failure.saved.appName, bundleID: failure.saved.bundleID))
                                         .font(.system(size: 10.5)).foregroundStyle(.secondary)
                                 }
                                 Spacer()
@@ -71,9 +71,12 @@ struct ResultCard: View {
     }
 
     static func subtitle(_ r: RestoreResult) -> String {
-        if r.movedCount == 0 && r.notRestored.isEmpty { return String(localized: "Everything was already in place.") }
-        if r.notRestored.isEmpty { return String(localized: "\(r.movedCount) windows are back in place.") }
-        return String(localized: "\(r.movedCount) windows moved.") + " " + String(localized: "\(r.notRestored.count) couldn’t be restored.")
+        let opened = r.openedApps.isEmpty ? "" : " " + String(localized: "Opened \(r.openedApps.count) apps.")
+        if r.movedCount == 0 && r.notRestored.isEmpty {
+            return r.openedApps.isEmpty ? String(localized: "Everything was already in place.") : opened.trimmingCharacters(in: .whitespaces)
+        }
+        if r.notRestored.isEmpty { return String(localized: "\(r.movedCount) windows are back in place.") + opened }
+        return String(localized: "\(r.movedCount) windows moved.") + " " + String(localized: "\(r.notRestored.count) couldn’t be restored.") + opened
     }
 }
 

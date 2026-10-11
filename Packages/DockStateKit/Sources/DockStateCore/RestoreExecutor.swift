@@ -76,10 +76,12 @@ public struct RestoreResult: Sendable, Equatable {
     public var notRestored: [Failure]
     public var undo: UndoRecord
     public var automatic: Bool
+    /// Apps DockState opened for this restore (bundle IDs).
+    public var openedApps: [String]
 
     public init(
         workspaceID: UUID, workspaceName: String, movedCount: Int, alreadyInPlaceCount: Int,
-        notRestored: [Failure], undo: UndoRecord, automatic: Bool
+        notRestored: [Failure], undo: UndoRecord, automatic: Bool, openedApps: [String] = []
     ) {
         self.workspaceID = workspaceID
         self.workspaceName = workspaceName
@@ -88,6 +90,7 @@ public struct RestoreResult: Sendable, Equatable {
         self.notRestored = notRestored
         self.undo = undo
         self.automatic = automatic
+        self.openedApps = openedApps
     }
 }
 

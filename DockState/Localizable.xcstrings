@@ -31,6 +31,16 @@
         }
       }
     },
+    "%@ isn’t installed on this Mac": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bu Mac’te yüklü değil"
+          }
+        }
+      }
+    },
     "%@ isn’t open": {
       "localizations": {
         "tr": {
@@ -95,6 +105,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld uygulama açık değil"
+          }
+        }
+      }
+    },
+    "%lld apps that aren’t open will be opened.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld app that isn’t open will be opened."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld apps that aren’t open will be opened."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açık olmayan %lld uygulama açılacak."
           }
         }
       }
@@ -869,6 +907,16 @@
         }
       }
     },
+    "Couldn’t open %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ açılamadı."
+          }
+        }
+      }
+    },
     "Couldn’t open the app.": {
       "localizations": {
         "tr": {
@@ -1153,6 +1201,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "DockState, pencereler geri yükleniyor"
+          }
+        }
+      }
+    },
+    "DockState’s windows stay above other apps’ windows. Links open in front of them.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState pencereleri diğer uygulamaların pencerelerinin üstünde kalır. Bağlantılar bunların önünde açılır."
           }
         }
       }
@@ -1591,16 +1649,6 @@
         }
       }
     },
-    "Manage, Settings and Preview stay above other apps’ windows.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yönetim, Ayarlar ve Önizleme pencereleri diğer uygulamaların pencerelerinin üstünde kalır."
-          }
-        }
-      }
-    },
     "More": {
       "localizations": {
         "tr": {
@@ -1737,6 +1785,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Şu anda bağlı değil. Geri yüklemek veya güncellemek için bu ekranları bağlayın."
+          }
+        }
+      }
+    },
+    "Not installed": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yüklü değil"
           }
         }
       }
@@ -1897,6 +1955,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aç"
+          }
+        }
+      }
+    },
+    "Opened %lld apps.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Opened %lld app."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Opened %lld apps."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld uygulama açıldı."
           }
         }
       }
