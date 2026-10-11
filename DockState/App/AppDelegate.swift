@@ -66,6 +66,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// opens a window directly; used for UI checks and README screenshots.
     private func openDebugWindowFromLaunchArguments() -> Bool {
         guard let target = UserDefaults.standard.string(forKey: "DockStateOpen") else { return false }
+        // `-DockStateCloseWindowsAfter <seconds>` closes the opened windows again (checks of
+        // the Dock / Cmd+Tab behaviour).
+        let closeAfter = UserDefaults.standard.double(forKey: "DockStateCloseWindowsAfter")
+        if closeAfter > 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + closeAfter) {
+                NSApp.windows.filter { $0.identifier != nil && $0.isVisible }.forEach { $0.close() }
+            }
+        }
         if let tab = UserDefaults.standard.string(forKey: "DockStateTab").flatMap(SettingsTab.init) { actions.settingsTab = tab }
         switch target {
         case "manage": actions.showManage()
