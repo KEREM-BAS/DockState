@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0C16C6B3307B7C44009942DB /* DockStateCore in Frameworks */ = {isa = PBXBuildFile; productRef = 0C16C6B5307B7C44009942DB /* DockStateCore */; };
 		0C16C6B4307B7C44009942DB /* DockStateSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 0C16C6B6307B7C44009942DB /* DockStateSystem */; };
+		0C16C6B8307B7C44009942DB /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 0C16C6B9307B7C44009942DB /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,7 @@
 			files = (
 				0C16C6B3307B7C44009942DB /* DockStateCore in Frameworks */,
 				0C16C6B4307B7C44009942DB /* DockStateSystem in Frameworks */,
+				0C16C6B8307B7C44009942DB /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,6 +86,7 @@
 			packageProductDependencies = (
 				0C16C6B5307B7C44009942DB /* DockStateCore */,
 				0C16C6B6307B7C44009942DB /* DockStateSystem */,
+				0C16C6B9307B7C44009942DB /* Sparkle */,
 			);
 			productName = DockState;
 			productReference = 0C16C693307B7C44009942DB /* DockState.app */;
@@ -116,6 +119,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				0C16C6B2307B7C44009942DB /* XCLocalSwiftPackageReference "Packages/DockStateKit" */,
+				0C16C6B7307B7C44009942DB /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0C16C694307B7C44009942DB /* Products */;
@@ -273,7 +277,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				COMBINE_HIDPI_IMAGES = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "DockState Dev";
@@ -301,7 +304,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				COMBINE_HIDPI_IMAGES = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -350,6 +352,17 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		0C16C6B7307B7C44009942DB /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.10.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		0C16C6B5307B7C44009942DB /* DockStateCore */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -358,6 +371,11 @@
 		0C16C6B6307B7C44009942DB /* DockStateSystem */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = DockStateSystem;
+		};
+		0C16C6B9307B7C44009942DB /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0C16C6B7307B7C44009942DB /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -16,6 +16,7 @@ an issue to discuss it — "does one thing well" is a feature too.
   ```
   DEVELOPMENT_TEAM = ABCDE12345
   CODE_SIGN_IDENTITY = Apple Development
+  ENABLE_HARDENED_RUNTIME = YES
   ```
 
 ## Project layout

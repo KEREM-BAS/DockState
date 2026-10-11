@@ -30,13 +30,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         #if DEBUG
         if SelfTest.runIfRequested() { return }
-        if let out = UserDefaults.standard.string(forKey: "DockStateUpdateProbe") {
-            // Writes the result of one real update check, for development.
-            Task {
-                let outcome = await actions.updateChecker.check()
-                try? "\(outcome)".write(toFile: out, atomically: true, encoding: .utf8)
-                NSApp.terminate(nil)
-            }
+        #endif
+        #if DEBUG || UPDATE_TEST
+        if UpdateTest.isRequested {
+            // Only the updater: no menu bar icon, windows or window watching.
+            actions.updater.start()
             return
         }
         #endif
@@ -44,14 +42,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // DockState's windows are separate tools, never tabs of each other.
         NSWindow.allowsAutomaticWindowTabbing = false
         statusItem = StatusItemController(model: model, actions: actions)
+        actions.adoptOtherWindows()
         UNUserNotificationCenter.current().delegate = self
         registerNotificationCategories()
         model.start()
         actions.installHotKeys()
-        actions.checkForUpdatesIfDue()
-        actions.startUpdateTimer()
-        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.actions.checkForUpdatesIfDue() }
+        actions.updater.postNotification = { [weak self] version in self?.notifyUpdate(version: version) }
+        actions.updater.removeNotification = {
+            UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [Notifications.updateID])
         }
         #if DEBUG
         if openDebugWindowFromLaunchArguments() { return }
@@ -61,8 +59,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             if let issue = model.storeIssue { actions.reportStoreIssue(issue) }
             // Without permission DockState can do nothing; say so instead of only badging
-            // the menu bar icon (e.g. after the permission was reset or revoked).
-            if !model.permissionGranted { actions.requirePermission(then: nil) }
+            // the menu bar icon (e.g. after the permission was reset or revoked). The
+            // updater starts once that window closes.
+            if model.permissionGranted {
+                actions.updater.start()
+            } else {
+                actions.requirePermission(then: nil)
+            }
         }
     }
 
@@ -70,6 +73,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// `-DockStateOpen manage|settings|save|preview|onboarding|permission|firstSave|result`
     /// opens a window directly; used for UI checks and README screenshots.
     private func openDebugWindowFromLaunchArguments() -> Bool {
+        if let version = UserDefaults.standard.string(forKey: "DockStateDemoUpdate") {
+            actions.updater.showDemoReminder(version: version)
+        }
         guard let target = UserDefaults.standard.string(forKey: "DockStateOpen") else { return false }
         // `-DockStateCloseWindowsAfter <seconds>` closes the opened windows again (checks of
         // the Dock / Cmd+Tab behaviour).
@@ -163,13 +169,12 @@ extension AppDelegate: Presenter {
         post(content, id: "match")
     }
 
-    func notifyUpdate(version: String, url: URL) {
+    func notifyUpdate(version: String) {
         let content = UNMutableNotificationContent()
         content.title = String(localized: "DockState \(version) is available")
-        content.body = String(localized: "Click to open the download page on GitHub.")
+        content.body = String(localized: "Click to see what’s new and install it.")
         content.categoryIdentifier = Notifications.updateCategory
-        content.userInfo = [Notifications.urlKey: url.absoluteString]
-        post(content, id: "update")
+        post(content, id: Notifications.updateID)
     }
 
     func notifyNewSetup() {
@@ -214,7 +219,7 @@ enum Notifications {
     static let saveAction = "save"
     static let workspaceKey = "workspace"
     static let updateCategory = "update"
-    static let urlKey = "url"
+    static let updateID = "update"
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
@@ -230,7 +235,6 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         let action = response.actionIdentifier
         let category = response.notification.request.content.categoryIdentifier
         let workspaceID = (response.notification.request.content.userInfo[Notifications.workspaceKey] as? String).flatMap(UUID.init)
-        let link = (response.notification.request.content.userInfo[Notifications.urlKey] as? String).flatMap(URL.init(string:))
         await MainActor.run {
             switch (category, action) {
             case (Notifications.matchCategory, Notifications.restoreAction):
@@ -240,8 +244,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             case (Notifications.newSetupCategory, Notifications.saveAction), (Notifications.newSetupCategory, UNNotificationDefaultActionIdentifier):
                 actions.showSave()
             case (Notifications.updateCategory, _):
-                // Only ever our own GitHub releases page.
-                if let link, link.host == "github.com" { NSWorkspace.shared.open(link) }
+                actions.updater.checkNow()
             default:
                 break
             }

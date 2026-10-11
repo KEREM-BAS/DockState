@@ -14,6 +14,8 @@ struct DockStateApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button(String(localized: "About DockState")) { delegate.actions.showSettings(tab: .about) }
+                Button(String(localized: "Check for Updates…")) { delegate.actions.updater.checkNow() }
+                    .disabled(!delegate.actions.updater.canCheck)
             }
             CommandGroup(replacing: .appSettings) {
                 Button(String(localized: "Settings…")) { delegate.actions.showSettings() }

@@ -23,9 +23,6 @@ final class AppSettings {
     var appNotRunningPolicy: AppNotRunningPolicy { didSet { defaults.set(appNotRunningPolicy.rawValue, forKey: Keys.notRunning) } }
     /// Keep Manage, Settings, Preview and Save above other apps' windows.
     var keepWindowsOnTop: Bool { didSet { defaults.set(keepWindowsOnTop, forKey: Keys.onTop) } }
-    /// Opt-in: look for a newer release on GitHub at most once a day.
-    var checkForUpdates: Bool { didSet { defaults.set(checkForUpdates, forKey: Keys.updates) } }
-    var lastUpdateCheck: Date? { didSet { defaults.set(lastUpdateCheck, forKey: Keys.lastUpdateCheck) } }
     /// Place windows of apps opened after a restore (see AppModel.placeLateApp).
     var placeLateApps: Bool { didSet { defaults.set(placeLateApps, forKey: Keys.placeLate) } }
     var didPromptForAccessibility: Bool { didSet { defaults.set(didPromptForAccessibility, forKey: Keys.prompted) } }
@@ -51,9 +48,7 @@ final class AppSettings {
         didPromptForAccessibility = defaults.bool(forKey: Keys.prompted)
         permissionWasGranted = defaults.bool(forKey: Keys.wasGranted)
         placeLateApps = defaults.bool(forKey: Keys.placeLate)
-        checkForUpdates = defaults.bool(forKey: Keys.updates)
         keepWindowsOnTop = defaults.bool(forKey: Keys.onTop)
-        lastUpdateCheck = defaults.object(forKey: Keys.lastUpdateCheck) as? Date
         globalShortcutsEnabled = defaults.bool(forKey: Keys.shortcuts)
         if let data = defaults.data(forKey: Keys.shortcutCombos),
            let saved = try? JSONDecoder().decode([ShortcutAction: KeyCombo].self, from: data) {
@@ -72,9 +67,7 @@ final class AppSettings {
         static let prompted = "didPromptForAccessibility"
         static let wasGranted = "permissionWasGranted"
         static let placeLate = "placeLateApps"
-        static let updates = "checkForUpdates"
         static let onTop = "keepWindowsOnTop"
-        static let lastUpdateCheck = "lastUpdateCheck"
         static let shortcuts = "globalShortcutsEnabled"
         static let shortcutCombos = "shortcutCombos"
     }
