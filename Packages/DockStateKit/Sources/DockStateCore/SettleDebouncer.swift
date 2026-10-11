@@ -21,7 +21,7 @@ public actor SettleDebouncer {
         pending?.cancel()
         pending = Task { [delay] in
             try? await Task.sleep(for: delay)
-            guard !Task.isCancelled, await self.isCurrent(mine) else { return }
+            guard !Task.isCancelled, self.isCurrent(mine) else { return }
             await action()
         }
     }
