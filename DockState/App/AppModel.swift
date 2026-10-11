@@ -73,7 +73,10 @@ final class AppModel {
         self.settings = settings
         self.store = storeURL.map(WorkspaceStore.init(fileURL:))
         promptedInEarlierSession = settings.didPromptForAccessibility
-        if permissionGranted { settings.permissionWasGranted = true }
+        if permissionGranted {
+            settings.permissionWasGranted = true
+            settings.permissionDeclined = false
+        }
         if let store {
             let result = store.load()
             workspaces = result.workspaces

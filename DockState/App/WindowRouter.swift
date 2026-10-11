@@ -24,7 +24,11 @@ final class WindowRouter {
     private static var otherWindowsTask: Task<Void, Never>?
     /// Windows the router didn't open that became key; released ones drop out.
     private static var otherWindows: [WeakWindow] = []
+    /// One of them is on screen (not minimized): DockState's windows don't float meanwhile.
     private static var otherWindowsShown = false
+    /// When the last router window closed; an update window right after it (Sparkle's
+    /// question after onboarding) still hands focus back to the app the user was in.
+    private static var lastWindowClosed: Date?
     /// The app the user was in before DockState's first window opened; it gets focus back
     /// when the last DockState window closes.
     private static weak var previousApp: NSRunningApplication?
@@ -47,10 +51,11 @@ final class WindowRouter {
 
     /// While onboarding is open nothing floats, so neither it nor System Settings (where
     /// the permission is granted) ends up underneath another DockState window. While an
-    /// update window or alert is open nothing floats either: it stays in front, and links
-    /// it opens (release notes, Version History) come in front of DockState.
+    /// update window or alert is on screen nothing floats either: it stays in front, and
+    /// links it opens (release notes, Version History) come in front of DockState. After a
+    /// link opened, nothing floats until DockState is used again.
     private var floats: Bool {
-        keepOnTop() && windows[WindowID.onboarding] == nil && !Self.otherWindowsShown
+        keepOnTop() && windows[WindowID.onboarding] == nil && !Self.otherWindowsShown && reactivationObserver == nil
     }
 
     /// Treats the app's other titled windows like router windows: DockState stays in the
@@ -85,6 +90,10 @@ final class WindowRouter {
     private static func isOtherWindow(_ window: NSWindow) -> Bool {
         window.styleMask.contains(.titled) && window.sheetParent == nil
             && !routerWindows.contains(ObjectIdentifier(window))
+    }
+
+    private static var otherWindowsVisible: Bool {
+        otherWindows.contains { $0.window.map { $0.isVisible && !$0.isMiniaturized } ?? false }
     }
 
     /// Minimized windows, and all of them while DockState is hidden (⌘H), still count.
@@ -187,13 +196,15 @@ final class WindowRouter {
     private static func windowClosed() {
         openWindowCount = max(0, openWindowCount - 1)
         guard openWindowCount == 0 else { return }
+        lastWindowClosed = Date()
         becomeMenuBarAppWhenIdle()
     }
 
     private func otherWindowAppeared(_ window: NSWindow) {
         if !Self.otherWindows.contains(where: { $0.window === window }) { Self.otherWindows.append(WeakWindow(window: window)) }
         // DockState is already frontmost here; don't hand focus to an app from long ago.
-        if Self.openWindowCount == 0, Self.otherWindowsTask == nil { Self.previousApp = nil }
+        let justClosed = Self.lastWindowClosed.map { Date().timeIntervalSince($0) < 3 } ?? false
+        if Self.openWindowCount == 0, Self.otherWindowsTask == nil, !justClosed { Self.previousApp = nil }
         Self.policyTask?.cancel()
         if NSApp.activationPolicy() != .regular { NSApp.setActivationPolicy(.regular) }
         if !Self.otherWindowsShown {
@@ -206,6 +217,12 @@ final class WindowRouter {
         Self.otherWindowsTask = Task { [weak self] in
             while Self.otherWindowsOpen {
                 try? await Task.sleep(for: .seconds(1))
+                // Minimizing it lets DockState's windows float again (and restoring stops it).
+                let shown = Self.otherWindowsVisible
+                if shown != Self.otherWindowsShown {
+                    Self.otherWindowsShown = shown
+                    self?.applyLevels()
+                }
             }
             Self.otherWindowsTask = nil
             Self.otherWindowsShown = false

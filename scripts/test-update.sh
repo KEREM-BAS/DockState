@@ -31,7 +31,6 @@ xcodebuild -project DockState.xcodeproj -scheme DockState -configuration Debug \
   -derivedDataPath build/UpdateTest -clonedSourcePackagesDirPath build/SourcePackages \
   -destination "platform=macOS,arch=$(uname -m)" \
   CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= ENABLE_DEBUG_DYLIB=NO \
-  ENABLE_HARDENED_RUNTIME=YES CODE_SIGN_ENTITLEMENTS=Config/AdHoc.entitlements \
   build -quiet
 BUILT="build/UpdateTest/Build/Products/Debug/DockStateDev.app"
 
@@ -53,14 +52,21 @@ copy() {
   plutil -replace CFBundleShortVersionString -string "$1" "$app/Contents/Info.plist"
   plutil -replace CFBundleVersion -string "$2" "$app/Contents/Info.plist"
   plutil -replace SUPublicEDKey -string "$PUBLIC_KEY" "$app/Contents/Info.plist"
-  if [[ -n "${SIGN_IDENTITY:-}" ]]; then
-    local fw="$app/Contents/Frameworks/Sparkle.framework"
-    rm -rf "$fw/Versions/B/XPCServices" "$fw/XPCServices"
-    for item in "$fw/Versions/B/Autoupdate" "$fw/Versions/B/Updater.app" "$fw" "$app"; do
-      codesign --force --sign "$SIGN_IDENTITY" --options=runtime "$item" 2>/dev/null
-    done
-  else
-    codesign --force --sign - --preserve-metadata=entitlements,flags "$app" 2>/dev/null
+  # Packaged like scripts/build-release.sh: no XPC services, helpers signed inside out,
+  # hardened runtime; ad-hoc copies get only the entitlement to load Sparkle.framework.
+  local fw="$app/Contents/Frameworks/Sparkle.framework" identity="${SIGN_IDENTITY:--}"
+  local entitlements=()
+  [[ -z "${SIGN_IDENTITY:-}" ]] && entitlements=(--entitlements Config/AdHoc.entitlements)
+  rm -rf "$fw/Versions/B/XPCServices" "$fw/XPCServices"
+  for item in "$fw/Versions/B/Autoupdate" "$fw/Versions/B/Updater.app" "$fw"; do
+    codesign --force --sign "$identity" --options=runtime "$item" 2>/dev/null
+  done
+  codesign --force --sign "$identity" --options=runtime ${entitlements[@]+"${entitlements[@]}"} "$app" 2>/dev/null
+  local signature
+  signature="$(codesign -dv "$app" 2>&1)"
+  if [[ "$signature" != *",runtime)"* && "$signature" != *"(runtime)"* ]]; then
+    echo "error: $app isn't signed with the hardened runtime" >&2
+    exit 1
   fi
 }
 copy 0.0.1 1 "$WORK/old"

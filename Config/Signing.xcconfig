@@ -15,10 +15,11 @@
 CODE_SIGN_STYLE = Automatic
 CODE_SIGN_IDENTITY = -
 DEVELOPMENT_TEAM =
-// The hardened runtime is on for every build: notarization needs it, and it keeps other
-// code (DYLD_INSERT_LIBRARIES) out of a process the user trusts with Accessibility. It only
-// loads frameworks signed by the same team; ad-hoc builds have no team, so they may load
-// Sparkle.framework through this entitlement. Builds signed with a team clear it.
+// The hardened runtime: notarization needs it, and it keeps other code (DYLD_INSERT_LIBRARIES)
+// out of a process the user trusts with Accessibility. (Xcode leaves it out of ad-hoc Debug
+// builds; scripts/build-release.sh always signs with it.) It only loads frameworks signed by
+// the same team; ad-hoc builds have no team, so they may load Sparkle.framework through this
+// entitlement. Builds signed with a team clear it.
 ENABLE_HARDENED_RUNTIME = YES
 CODE_SIGN_ENTITLEMENTS = Config/AdHoc.entitlements
 

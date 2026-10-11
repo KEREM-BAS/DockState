@@ -132,11 +132,17 @@ jobs:
           }
           LATEST="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || true)"
           LATEST="${LATEST#v}"
-          if [[ "$VERSION" != *-* && -n "$LATEST" ]] && ! newer "$VERSION" "$LATEST"; then FLAGS+=(--latest=false); fi
-          # Sparkle orders updates by build number: it must be higher than the published one.
-          MIN_BUILD="$(curl -fsSL "https://github.com/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml" 2>/dev/null \
-            | sed -n 's:.*<sparkle\:version>\([0-9][0-9]*\)</sparkle\:version>.*:\1:p' | head -1 || true)"
-          export MIN_BUILD
+          BECOMES_LATEST=false
+          if [[ "$VERSION" != *-* && "$GITHUB_REF_TYPE" == "tag" ]]; then
+            if [[ -z "$LATEST" ]] || newer "$VERSION" "$LATEST"; then BECOMES_LATEST=true; else FLAGS+=(--latest=false); fi
+          fi
+          # The new feed's build number must be higher than the one users have (Sparkle
+          # orders updates by it). Only checked for the release that becomes the feed.
+          if [[ "$BECOMES_LATEST" == "true" ]]; then
+            MIN_BUILD="$(curl -fsSL "https://github.com/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml" 2>/dev/null \
+              | sed -n 's:.*<sparkle\:version>\([0-9][0-9]*\)</sparkle\:version>.*:\1:p' | head -1 || true)"
+            export MIN_BUILD
+          fi
           # The notes GitHub would generate, fetched first so the appcast can show them.
           NOTES="$RUNNER_TEMP/notes.md"
           gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
