@@ -177,6 +177,11 @@ private struct RestoreSettings: View {
                     }
                     .labelsHidden().fixedSize()
                 }
+                SettingsRow(title: String(localized: "Place apps you open later"),
+                            subtitle: String(localized: "After you restore a workspace, apps you open move to their saved place. Also for workspaces set to “Always restore”.")) {
+                    Toggle(String(localized: "Place apps you open later"), isOn: $settings.placeLateApps)
+                        .toggleStyle(.switch).labelsHidden().controlSize(.small)
+                }
                 SettingsRow(title: String(localized: "Use window titles to tell windows apart"),
                             subtitle: String(localized: "Helps with apps that have several windows. Titles are stored only on this Mac and never logged."),
                             showsDivider: false) {

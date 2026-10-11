@@ -26,7 +26,9 @@ enum SelfTest {
         var log: [String] = []
         func check(_ ok: Bool, _ what: String) { log.append("\(ok ? "PASS" : "FAIL") \(what)") }
         let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("dockstate-selftest-\(UUID().uuidString).json")
-        let model = AppModel(settings: AppSettings(defaults: UserDefaults(suiteName: "dockstate.selftest")!), storeURL: tmp)
+        let settings = AppSettings(defaults: UserDefaults(suiteName: "dockstate.selftest")!)
+        settings.hasCompletedOnboarding = true
+        let model = AppModel(settings: settings, storeURL: tmp)
         log.append("Accessibility granted: \(model.permissionGranted)")
         guard model.permissionGranted else { return log.joined(separator: "\n") }
 
@@ -72,6 +74,7 @@ enum SelfTest {
         await model.undoLastRestore()
         let undone = await model.windowSystem.frame(of: target.id)
         check(undone.map { $0.isApproximatelyEqual(to: displaced, tolerance: 2) } ?? false, "undo moved it back to the displaced frame (\(undone.map(\.description) ?? "nil"))")
+        await model.refresh()
 
         // An excluded window is never planned for a move, even when it is out of place.
         if var excluded = model.workspace(id: ws.id) {
@@ -81,8 +84,32 @@ enum SelfTest {
             check(plan.moves.isEmpty, "excluded window is not moved (moves=\(plan.moves.count))")
         }
 
+        var windowID = target.id
+        // Late placement: quit the app and open the document again; DockState must put the
+        // window back. Only with a dedicated test document, never with the user's windows.
+        if let file = UserDefaults.standard.string(forKey: "DockStateSelfTestFile") {
+            let name = URL(fileURLWithPath: file).deletingPathExtension().lastPathComponent
+            let windowsOfApp = model.liveWindows.filter { $0.bundleID == bundleID && $0.isStandard }
+            if windowsOfApp.count == 1, windowsOfApp[0].title?.contains(name) == true,
+               let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first {
+                app.terminate()
+                for _ in 0..<40 where !app.isTerminated { try? await Task.sleep(for: .milliseconds(250)) }
+                NSWorkspace.shared.open(URL(fileURLWithPath: file))
+                await model.placeLateApp(bundleID)
+                await model.refresh()
+                if let reopened = model.liveWindows.first(where: { $0.bundleID == bundleID && $0.title?.contains(name) == true }) {
+                    windowID = reopened.id
+                    check(reopened.frame.isPlacementEquivalent(to: original), "app opened later was placed (\(reopened.frame))")
+                } else {
+                    check(false, "reopened document window not found")
+                }
+            } else {
+                log.append("SKIP late placement: \(windowsOfApp.count) windows, titles \(windowsOfApp.map { $0.title ?? "-" }), looking for \(name)")
+            }
+        }
+
         // Put the window back where the user had it.
-        _ = await model.windowSystem.setFrame(original, of: target.id)
+        _ = await model.windowSystem.setFrame(original, of: windowID)
         try? FileManager.default.removeItem(at: tmp)
         UserDefaults().removePersistentDomain(forName: "dockstate.selftest")
         log.append(log.contains { $0.hasPrefix("FAIL") } ? "RESULT: FAIL" : "RESULT: PASS")
