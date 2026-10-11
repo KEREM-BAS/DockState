@@ -30,7 +30,8 @@ echo "• Building DockState Dev"
 xcodebuild -project DockState.xcodeproj -scheme DockState -configuration Debug \
   -derivedDataPath build/UpdateTest -clonedSourcePackagesDirPath build/SourcePackages \
   -destination "platform=macOS,arch=$(uname -m)" \
-  CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= ENABLE_HARDENED_RUNTIME=NO ENABLE_DEBUG_DYLIB=NO \
+  CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= ENABLE_DEBUG_DYLIB=NO \
+  ENABLE_HARDENED_RUNTIME=YES CODE_SIGN_ENTITLEMENTS=Config/AdHoc.entitlements \
   build -quiet
 BUILT="build/UpdateTest/Build/Products/Debug/DockStateDev.app"
 
@@ -59,7 +60,7 @@ copy() {
       codesign --force --sign "$SIGN_IDENTITY" --options=runtime "$item" 2>/dev/null
     done
   else
-    codesign --force --sign - "$app" 2>/dev/null
+    codesign --force --sign - --preserve-metadata=entitlements,flags "$app" 2>/dev/null
   fi
 }
 copy 0.0.1 1 "$WORK/old"
@@ -71,7 +72,8 @@ DMG="$WORK/site/DockStateDev-0.0.2.dmg"
 hdiutil create -volname "DockState Dev" -srcfolder "$WORK/new" -format UDZO -quiet "$DMG"
 printf '## What’s new\n* Test update\n' > "$WORK/notes.md"
 appcast() {
-  APP="$WORK/new/DockStateDev.app" OUT="$WORK/site/appcast.xml" SPARKLE_KEY_FILE="$1" \
+  # Never a SPARKLE_ED_PRIVATE_KEY from the environment: only the throw-away key.
+  SPARKLE_ED_PRIVATE_KEY= APP="$WORK/new/DockStateDev.app" OUT="$WORK/site/appcast.xml" SPARKLE_KEY_FILE="$1" \
     DOWNLOAD_URL="http://localhost:$PORT/$(basename "$DMG")" \
     scripts/make-appcast.sh 0.0.2 "$DMG" "$WORK/notes.md" >/dev/null
 }
@@ -102,7 +104,11 @@ try Curve25519.Signing.PrivateKey().rawRepresentation.base64EncodedString()
   .write(toFile: CommandLine.arguments[1], atomically: true, encoding: .utf8)
 EOF
 swift "$WORK/other.swift" "$WORK/other.key"
-appcast "$WORK/other.key"
+# make-appcast.sh refuses a mismatched key, so tamper with its output like an attacker would.
+appcast "$WORK/private.key"
+SIGN_UPDATE="$(find build/SourcePackages/artifacts -type f -name sign_update -path '*/bin/*' ! -path '*old_dsa*' | head -1)"
+OTHER_SIGNATURE="$("$SIGN_UPDATE" --ed-key-file "$WORK/other.key" -p "$DMG")"
+sed -i '' "s#sparkle:edSignature=\"[^\"]*\"#sparkle:edSignature=\"$OTHER_SIGNATURE\"#" "$WORK/site/appcast.xml"
 run "$WORK/refused.log"
 for _ in $(seq 1 30); do
   grep -qE "aborted|cycle finished" "$WORK/refused.log" 2>/dev/null && break

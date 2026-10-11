@@ -32,7 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if SelfTest.runIfRequested() { return }
         #endif
         #if DEBUG || UPDATE_TEST
-        if UpdateTest.isRequested {
+        if UpdateTest.isRequested && !UpdateTest.showsWindows {
             // Only the updater: no menu bar icon, windows or window watching.
             actions.updater.start()
             return
@@ -51,21 +51,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         actions.updater.removeNotification = {
             UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [Notifications.updateID])
         }
+        actions.updater.openLink = { [weak self] url in self?.actions.openExternal(url) }
         #if DEBUG
+        if UpdateTest.showsWindows {
+            Task {
+                try? await Task.sleep(for: .seconds(2)) // after the window -DockStateOpen opens
+                actions.updater.start()
+                // `-DockStateUpdateTestCloseAfter <seconds>` closes Sparkle's windows again.
+                let closeAfter = UserDefaults.standard.double(forKey: "DockStateUpdateTestCloseAfter")
+                guard closeAfter > 0 else { return }
+                try? await Task.sleep(for: .seconds(closeAfter))
+                let own: Set<String> = [WindowID.onboarding, WindowID.save, WindowID.manage, WindowID.settings, WindowID.preview]
+                NSApp.windows
+                    .filter { $0.isVisible && $0.styleMask.contains(.titled) && !own.contains($0.identifier?.rawValue ?? "") }
+                    .forEach { $0.close() }
+            }
+        }
         if openDebugWindowFromLaunchArguments() { return }
         #endif
         if !model.settings.hasCompletedOnboarding {
             actions.showOnboarding()
         } else {
             if let issue = model.storeIssue { actions.reportStoreIssue(issue) }
-            // Without permission DockState can do nothing; say so instead of only badging
-            // the menu bar icon (e.g. after the permission was reset or revoked). The
-            // updater starts once that window closes.
-            if model.permissionGranted {
-                actions.updater.start()
-            } else {
-                actions.requirePermission(then: nil)
-            }
+            // Without permission DockState can do nothing: say so instead of only badging the
+            // menu bar icon (e.g. after the permission was reset or revoked) — unless the user
+            // chose Not Now.
+            let asksForPermission = !model.permissionGranted && !model.settings.permissionDeclined
+            if asksForPermission { actions.requirePermission(then: nil) }
+            // Check Now works right away; Sparkle's one-time question waits for a launch
+            // without the permission step on screen.
+            actions.updater.start(mayAsk: !asksForPermission)
         }
     }
 
@@ -117,6 +132,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Clicking the Dock icon brings DockState's open windows forward; launching it
         // again from Finder with no window open shows Manage.
         if WindowRouter.hasOpenWindows { return true }
+        // Only an update window or an alert is open: bring that forward.
+        if WindowRouter.bringOtherWindowsForward() { return false }
         actions.showManage()
         return false
     }

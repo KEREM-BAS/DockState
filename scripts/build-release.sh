@@ -7,27 +7,35 @@
 #   - If DEVELOPER_ID_APPLICATION is set (e.g. "Developer ID Application: Name (TEAMID)")
 #     and that identity is in the keychain, the app is signed with it, hardened runtime
 #     and secure timestamp — ready for notarization.
-#   - Otherwise the app is ad-hoc signed, without the hardened runtime. It runs, but
-#     Gatekeeper will warn users; such builds must be labelled "unsigned" when published.
+#   - Otherwise the app is ad-hoc signed (hardened runtime, plus the entitlement that lets it
+#     load Sparkle.framework without a team ID). It runs, but Gatekeeper will warn users;
+#     such builds must be labelled "unsigned" when published.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 VERSION="${1:-$(sed -n 's/^MARKETING_VERSION = //p' Config/Version.xcconfig)}"
+if [[ -n "${DEVELOPER_ID_APPLICATION:-}" && -z "${BUILD_NUMBER:-}" ]]; then
+  # Sparkle orders updates by build number, so a signed build needs a real one.
+  echo "error: set BUILD_NUMBER (higher than the last release's) for a signed build" >&2
+  exit 1
+fi
 BUILD_NUMBER="${BUILD_NUMBER:-1}"
 DIST="dist"
 ARCHIVE="build/DockState.xcarchive"
 rm -rf "$ARCHIVE" "$DIST/DockState.app"
 mkdir -p "$DIST"
 
-# Ad-hoc builds run without the hardened runtime: it would refuse to load Sparkle.framework
-# (no team ID), and they can't be notarized anyway.
-SIGN_ARGS=(CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= ENABLE_HARDENED_RUNTIME=NO)
+# Ad-hoc builds keep the hardened runtime but may load Sparkle.framework without a team ID
+# (Config/AdHoc.entitlements); Developer ID builds don't carry that entitlement.
+SIGN_ARGS=(CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=
+  ENABLE_HARDENED_RUNTIME=YES CODE_SIGN_ENTITLEMENTS=Config/AdHoc.entitlements)
 if [[ -n "${DEVELOPER_ID_APPLICATION:-}" ]]; then
   SIGN_ARGS=(
     CODE_SIGN_IDENTITY="$DEVELOPER_ID_APPLICATION"
     CODE_SIGN_STYLE=Manual
     DEVELOPMENT_TEAM="${APPLE_TEAM_ID:-}"
     ENABLE_HARDENED_RUNTIME=YES
+    CODE_SIGN_ENTITLEMENTS=
     OTHER_CODE_SIGN_FLAGS="--timestamp --options=runtime"
   )
   echo "Signing with: $DEVELOPER_ID_APPLICATION"
@@ -53,7 +61,7 @@ rm -rf "$FW/Versions/B/XPCServices" "$FW/XPCServices"
 if [[ -n "${DEVELOPER_ID_APPLICATION:-}" ]]; then
   SIGN=(codesign --force --sign "$DEVELOPER_ID_APPLICATION" --timestamp --options=runtime)
 else
-  SIGN=(codesign --force --sign -)
+  SIGN=(codesign --force --sign - --options=runtime)
 fi
 "${SIGN[@]}" "$FW/Versions/B/Autoupdate"
 "${SIGN[@]}" "$FW/Versions/B/Updater.app"

@@ -59,17 +59,15 @@ final class AppActions {
     func finishOnboarding() {
         let wasCompleted = model.settings.hasCompletedOnboarding
         model.settings.hasCompletedOnboarding = true
+        // Closed without allowing it: later launches don't open the permission step again.
+        if !model.permissionGranted { model.settings.permissionDeclined = true }
         model.stopWatchingPermission()
         router.close(WindowID.onboarding)
         // The launch skips the store alert during onboarding; show it once onboarding ends.
         if !wasCompleted, model.storeIsReadOnly, let issue = model.storeIssue { reportStoreIssue(issue) }
-        // Sparkle may ask (once) whether to check for updates: after setup, not during it.
-        if !updater.isStarted {
-            Task {
-                try? await Task.sleep(for: .seconds(2))
-                updater.start()
-            }
-        }
+        // Sparkle may ask (once) whether to check for updates: right after setup, while
+        // DockState is still the active app (its question shows on the next run-loop turn).
+        updater.start()
     }
 
     /// Asks for permission and remembers what to do once it's granted.

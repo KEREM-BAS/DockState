@@ -28,6 +28,9 @@ final class AppSettings {
     var didPromptForAccessibility: Bool { didSet { defaults.set(didPromptForAccessibility, forKey: Keys.prompted) } }
     /// This app was trusted at some point; missing permission later suggests a stale entry.
     var permissionWasGranted: Bool { didSet { defaults.set(permissionWasGranted, forKey: Keys.wasGranted) } }
+    /// The user closed the permission step without allowing it ("Not Now"): launches show
+    /// only the menu bar badge instead of asking again.
+    var permissionDeclined: Bool { didSet { defaults.set(permissionDeclined, forKey: Keys.declined) } }
     /// Global shortcuts take over the same keys in every other app, so they are off until
     /// the user turns them on.
     var globalShortcutsEnabled: Bool { didSet { defaults.set(globalShortcutsEnabled, forKey: Keys.shortcuts) } }
@@ -47,6 +50,7 @@ final class AppSettings {
         appNotRunningPolicy = defaults.string(forKey: Keys.notRunning).flatMap(AppNotRunningPolicy.init) ?? .openFirst
         didPromptForAccessibility = defaults.bool(forKey: Keys.prompted)
         permissionWasGranted = defaults.bool(forKey: Keys.wasGranted)
+        permissionDeclined = defaults.bool(forKey: Keys.declined)
         placeLateApps = defaults.bool(forKey: Keys.placeLate)
         keepWindowsOnTop = defaults.bool(forKey: Keys.onTop)
         globalShortcutsEnabled = defaults.bool(forKey: Keys.shortcuts)
@@ -66,6 +70,7 @@ final class AppSettings {
         static let notRunning = "appNotRunningPolicy"
         static let prompted = "didPromptForAccessibility"
         static let wasGranted = "permissionWasGranted"
+        static let declined = "permissionDeclined"
         static let placeLate = "placeLateApps"
         static let onTop = "keepWindowsOnTop"
         static let shortcuts = "globalShortcutsEnabled"

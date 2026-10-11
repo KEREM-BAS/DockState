@@ -9,7 +9,8 @@ import SwiftUI
 /// back to being a menu bar app.
 ///
 /// Windows the router didn't open (Sparkle's update windows, alerts, open and save panels)
-/// count too, and float like DockState's own (see `adoptOtherWindows`).
+/// count too; while one is open, DockState's own windows don't float (see
+/// `adoptOtherWindows`).
 @MainActor
 final class WindowRouter {
     private var windows: [String: NSWindow] = [:]
@@ -21,6 +22,9 @@ final class WindowRouter {
     private static var routerWindows: Set<ObjectIdentifier> = []
     private static var policyTask: Task<Void, Never>?
     private static var otherWindowsTask: Task<Void, Never>?
+    /// Windows the router didn't open that became key; released ones drop out.
+    private static var otherWindows: [WeakWindow] = []
+    private static var otherWindowsShown = false
     /// The app the user was in before DockState's first window opened; it gets focus back
     /// when the last DockState window closes.
     private static weak var previousApp: NSRunningApplication?
@@ -42,12 +46,15 @@ final class WindowRouter {
     }
 
     /// While onboarding is open nothing floats, so neither it nor System Settings (where
-    /// the permission is granted) ends up underneath another DockState window.
+    /// the permission is granted) ends up underneath another DockState window. While an
+    /// update window or alert is open nothing floats either: it stays in front, and links
+    /// it opens (release notes, Version History) come in front of DockState.
     private var floats: Bool {
-        keepOnTop() && windows[WindowID.onboarding] == nil
+        keepOnTop() && windows[WindowID.onboarding] == nil && !Self.otherWindowsShown
     }
 
-    /// Treats the app's other titled windows like router windows. Call once at launch.
+    /// Treats the app's other titled windows like router windows: DockState stays in the
+    /// Dock and Cmd+Tab while they're open. Call once at launch.
     func adoptOtherWindows() {
         guard otherWindowObserver == nil else { return }
         otherWindowObserver = NotificationCenter.default.addObserver(
@@ -56,11 +63,21 @@ final class WindowRouter {
             let window = note.object as? NSWindow
             MainActor.assumeIsolated {
                 guard let self, let window, Self.isOtherWindow(window) else { return }
-                // Without this, Settings (kept on top) would cover Sparkle's update window.
-                if self.floats, window.level == .normal { window.level = .floating }
-                Self.otherWindowAppeared()
+                self.otherWindowAppeared(window)
             }
         }
+    }
+
+    /// Brings an open update window or alert forward (a click on the Dock icon). False if
+    /// there is none.
+    static func bringOtherWindowsForward() -> Bool {
+        guard let window = otherWindows.compactMap(\.window).last(where: { $0.isVisible || $0.isMiniaturized }) else {
+            return false
+        }
+        if window.isMiniaturized { window.deminiaturize(nil) }
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        return true
     }
 
     /// A titled window the router didn't open. DockState's own panels are borderless, and
@@ -70,8 +87,11 @@ final class WindowRouter {
             && !routerWindows.contains(ObjectIdentifier(window))
     }
 
-    private static var otherWindowsVisible: Bool {
-        NSApp.windows.contains { $0.isVisible && isOtherWindow($0) }
+    /// Minimized windows, and all of them while DockState is hidden (⌘H), still count.
+    private static var otherWindowsOpen: Bool {
+        otherWindows.removeAll { $0.window == nil }
+        if NSApp.isHidden { return !otherWindows.isEmpty }
+        return otherWindows.contains { $0.window.map { $0.isVisible || $0.isMiniaturized } ?? false }
     }
 
     /// Lets an external app (the browser for a link) come in front of DockState's windows
@@ -79,7 +99,6 @@ final class WindowRouter {
     func lowerUntilReactivated() {
         guard keepOnTop() else { return }
         for window in windows.values { window.level = .normal }
-        for window in NSApp.windows where Self.isOtherWindow(window) && window.level == .floating { window.level = .normal }
         guard reactivationObserver == nil else { return }
         reactivationObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
@@ -96,10 +115,6 @@ final class WindowRouter {
     /// Re-applies the on-top setting to open windows (when the setting changes).
     func applyLevels() {
         for (id, window) in windows { window.level = level(for: id) }
-        for window in NSApp.windows where window.isVisible && Self.isOtherWindow(window)
-            && (window.level == .normal || window.level == .floating) {
-            window.level = floats ? .floating : .normal
-        }
     }
 
     func show<Content: View>(
@@ -175,19 +190,27 @@ final class WindowRouter {
         becomeMenuBarAppWhenIdle()
     }
 
-    private static func otherWindowAppeared() {
+    private func otherWindowAppeared(_ window: NSWindow) {
+        if !Self.otherWindows.contains(where: { $0.window === window }) { Self.otherWindows.append(WeakWindow(window: window)) }
         // DockState is already frontmost here; don't hand focus to an app from long ago.
-        if openWindowCount == 0, otherWindowsTask == nil { previousApp = nil }
-        policyTask?.cancel()
+        if Self.openWindowCount == 0, Self.otherWindowsTask == nil { Self.previousApp = nil }
+        Self.policyTask?.cancel()
         if NSApp.activationPolicy() != .regular { NSApp.setActivationPolicy(.regular) }
-        // Alerts are ordered out rather than closed, so poll until none is visible.
-        guard otherWindowsTask == nil else { return }
-        otherWindowsTask = Task {
-            while otherWindowsVisible {
+        if !Self.otherWindowsShown {
+            Self.otherWindowsShown = true
+            applyLevels()
+            window.orderFront(nil)
+        }
+        // Alerts are ordered out rather than closed, so poll until none is open.
+        guard Self.otherWindowsTask == nil else { return }
+        Self.otherWindowsTask = Task { [weak self] in
+            while Self.otherWindowsOpen {
                 try? await Task.sleep(for: .seconds(1))
             }
-            otherWindowsTask = nil
-            if openWindowCount == 0 { becomeMenuBarAppWhenIdle() }
+            Self.otherWindowsTask = nil
+            Self.otherWindowsShown = false
+            self?.applyLevels()
+            if Self.openWindowCount == 0 { Self.becomeMenuBarAppWhenIdle() }
         }
     }
 
@@ -198,7 +221,7 @@ final class WindowRouter {
             try? await Task.sleep(for: .milliseconds(400))
             // An alert (e.g. after onboarding) or an update window still needs DockState
             // to be a regular app.
-            while NSApp.modalWindow != nil || otherWindowsVisible {
+            while NSApp.modalWindow != nil || otherWindowsOpen {
                 try? await Task.sleep(for: .milliseconds(400))
                 if Task.isCancelled { return }
             }
@@ -215,6 +238,10 @@ final class WindowRouter {
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
     }
+}
+
+private struct WeakWindow {
+    weak var window: NSWindow?
 }
 
 enum WindowID {

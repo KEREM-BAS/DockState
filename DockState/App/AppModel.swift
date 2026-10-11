@@ -36,7 +36,7 @@ final class AppModel {
     private(set) var permissionGranted = AccessibilityPermission.isGranted
     /// The user asked for permission in an earlier session, so a missing permission now may
     /// be a stale entry rather than a first-time setup.
-    @ObservationIgnored private let promptedInEarlierSession: Bool
+    @ObservationIgnored private var promptedInEarlierSession: Bool
     /// Still not trusted a while after the user went to System Settings.
     private(set) var permissionWaitIsLong = false
     @ObservationIgnored private var longWaitTask: Task<Void, Never>?
@@ -100,6 +100,8 @@ final class AppModel {
         let permission = UserDefaults.standard.string(forKey: "DockStateDemoPermission")
         permissionGranted = permission == nil
         settings.permissionWasGranted = permission == "stale"
+        settings.didPromptForAccessibility = false
+        promptedInEarlierSession = false
         settings.hasCompletedOnboarding = true
     }
 
@@ -177,6 +179,7 @@ final class AppModel {
         log.info("Accessibility permission changed: \(granted, privacy: .public)")
         if granted {
             settings.permissionWasGranted = true
+            settings.permissionDeclined = false
             longWaitTask?.cancel()
             permissionWaitIsLong = false
         } else {
@@ -191,6 +194,9 @@ final class AppModel {
     /// First time: the system prompt (it adds DockState to the list and offers to open
     /// System Settings). After that: open System Settings directly.
     func requestPermission() {
+        #if DEBUG
+        if isDemo { return } // never the real prompt or System Settings in screenshots
+        #endif
         if !settings.didPromptForAccessibility {
             settings.didPromptForAccessibility = true
             AccessibilityPermission.requestPrompt()
@@ -205,6 +211,9 @@ final class AppModel {
     /// the system prompt. Returns false when macOS refused the reset; System Settings is
     /// opened instead so the user can remove the entry by hand.
     func resetPermission() async -> Bool {
+        #if DEBUG
+        if isDemo { return true } // never the real Accessibility entry
+        #endif
         guard let bundleID = Bundle.main.bundleIdentifier else { return false }
         let reset = await AccessibilityPermission.reset(bundleID: bundleID)
         log.info("Accessibility entry reset: \(reset, privacy: .public)")
