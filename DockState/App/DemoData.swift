@@ -80,7 +80,10 @@ enum DemoData {
         return RestoreResult(
             workspaceID: workspace.id, workspaceName: workspace.name, movedCount: 5, alreadyInPlaceCount: 2,
             notRestored: [.init(saved: figma, reason: .appNotRunning)],
-            undo: UndoRecord(workspaceID: workspace.id, workspaceName: workspace.name, date: Date(), entries: []),
+            undo: UndoRecord(workspaceID: workspace.id, workspaceName: workspace.name, date: Date(), entries: [
+                UndoEntry(window: LiveWindowID(pid: 9000, token: 0), appName: "Xcode",
+                          before: Frame(x: -1472, y: 498, width: 1000, height: 700), after: Frame(x: 20, y: 45, width: 1560, height: 1375)),
+            ]),
             automatic: false)
     }
 }
