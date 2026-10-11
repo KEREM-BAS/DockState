@@ -4,13 +4,14 @@ import AppKit
 @MainActor
 public enum AppLauncher {
     /// LaunchServices lookups are synchronous; views ask for icons on every render.
-    private static var urls: [String: URL?] = [:]
+    private static var urls: [String: URL] = [:]
     private static let icons = NSCache<NSString, NSImage>()
 
     private static func url(for bundleID: String) -> URL? {
         if let cached = urls[bundleID] { return cached }
         let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)
-        urls[bundleID] = url
+        // Only remember hits: an app installed later must show up without a relaunch.
+        if let url { urls[bundleID] = url }
         return url
     }
 

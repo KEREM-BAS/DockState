@@ -52,10 +52,27 @@ import Testing
           </entry>
         </feed>
         """
-        let releases = UpdateCheck.decodeAtomReleases(Data(feed.utf8))
+        let releases = UpdateCheck.decodeAtomReleases(Data(feed.utf8)) ?? []
         #expect(releases.map(\.tagName) == ["v0.2.0", "v0.1.0"])
         #expect(UpdateCheck.newerRelease(than: v("0.1.0"), in: releases)?.1 == v("0.2.0"))
-        #expect(UpdateCheck.decodeAtomReleases(Data("<feed/>".utf8)).isEmpty)
-        #expect(UpdateCheck.decodeAtomReleases(Data("not xml".utf8)).isEmpty)
+        // An empty feed is "no releases"; anything that isn't a feed is a failure.
+        #expect(UpdateCheck.decodeAtomReleases(Data("<feed/>".utf8)) == [])
+        #expect(UpdateCheck.decodeAtomReleases(Data("not xml".utf8)) == nil)
+        #expect(UpdateCheck.decodeAtomReleases(Data("<html><body>Sign in to Wi-Fi</body></html>".utf8)) == nil)
+    }
+
+    @Test func malformedVersionsDontCrash() {
+        for s in ["", "v", "+", "1.0.0-+", "-", "1..2", ".1", "1.0.0-"] {
+            #expect(AppVersion(s) == nil, "\(s)")
+        }
+    }
+
+    @Test func stableUsersAreNotOfferedBetas() {
+        let url = URL(string: "https://github.com/x/y/releases/tag/v1.1.0-beta.1")!
+        let beta = ReleaseInfo(tagName: "v1.1.0-beta.1", htmlURL: url, draft: false, prerelease: true)
+        let stable = ReleaseInfo(tagName: "v1.1.0", htmlURL: url, draft: false, prerelease: false)
+        #expect(UpdateCheck.newerRelease(than: v("1.0.0"), in: [beta]) == nil)
+        #expect(UpdateCheck.newerRelease(than: v("1.1.0-beta.1"), in: [stable])?.1 == v("1.1.0"))
+        #expect(UpdateCheck.newerRelease(than: v("1.0.0-beta.1"), in: [beta])?.1 == v("1.1.0-beta.1"))
     }
 }

@@ -21,6 +21,8 @@ jobs:
     env:
       # Signing is used only when every secret it needs is present.
       HAS_SIGNING: ${{ secrets.DEVELOPER_ID_CERTIFICATE_P12 != '' && secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD != '' && secrets.DEVELOPER_ID_APPLICATION != '' && secrets.APPLE_TEAM_ID != '' && secrets.NOTARY_KEY_P8 != '' && secrets.NOTARY_KEY_ID != '' && secrets.NOTARY_ISSUER_ID != '' }}
+      # Any of them set means signing was intended: then all seven must be there.
+      ANY_SIGNING: ${{ secrets.DEVELOPER_ID_CERTIFICATE_P12 != '' || secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD != '' || secrets.DEVELOPER_ID_APPLICATION != '' || secrets.APPLE_TEAM_ID != '' || secrets.NOTARY_KEY_P8 != '' || secrets.NOTARY_KEY_ID != '' || secrets.NOTARY_ISSUER_ID != '' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -32,6 +34,10 @@ jobs:
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then V="${GITHUB_REF_NAME#v}"; else V="$INPUT_VERSION"; fi
           if [[ ! "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
             echo "::error::'$V' is not a version like 1.2.3 or 1.2.3-beta.1"
+            exit 1
+          fi
+          if [[ "$ANY_SIGNING" == "true" && "$HAS_SIGNING" != "true" ]]; then
+            echo "::error::Some signing secrets are set but not all seven (see docs/RELEASING.md). Refusing to publish an unsigned build by accident."
             exit 1
           fi
           echo "version=$V" >> "$GITHUB_OUTPUT"

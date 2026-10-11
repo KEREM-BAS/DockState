@@ -36,8 +36,11 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
 struct KeyCombo: Codable, Hashable {
     var keyCode: UInt32
     var modifiers: UInt32
-    /// The key's label as typed, e.g. "S" or "F5".
+    /// The key's label when it was recorded; only a fallback, the label shown is worked
+    /// out from the current keyboard layout and language.
     var key: String
+
+    static let modifierMask = UInt32(cmdKey | optionKey | controlKey | shiftKey)
 
     /// "⌃⌥⇧⌘S" in the standard macOS order.
     var display: String {
@@ -46,23 +49,37 @@ struct KeyCombo: Codable, Hashable {
         if modifiers & UInt32(optionKey) != 0 { s += "⌥" }
         if modifiers & UInt32(shiftKey) != 0 { s += "⇧" }
         if modifiers & UInt32(cmdKey) != 0 { s += "⌘" }
-        return s + key
+        return s + keyLabel
     }
 
-    /// Builds a combo from a key press; nil unless it has ⌘, ⌥ or ⌃ (a global shortcut
-    /// without them would swallow normal typing).
-    init?(event: NSEvent) {
+    var keyLabel: String {
+        if let special = Self.specialKeyLabel(Int(keyCode)) { return special }
+        return Self.character(forKeyCode: keyCode) ?? key
+    }
+
+    enum RejectionReason: Error, Equatable {
+        /// Needs ⌃, or two of ⌘ ⌥ ⌃ — otherwise it would take over normal typing or a
+        /// standard command such as ⌘W in every app.
+        case tooSimple
+        case notAKey
+    }
+
+    /// Builds a combo from a key press, or says why that key press can't be a global shortcut.
+    static func from(event: NSEvent) -> Result<KeyCombo, RejectionReason> {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        guard !flags.intersection([.command, .option, .control]).isEmpty else { return nil }
+        let strong = [flags.contains(.command), flags.contains(.option), flags.contains(.control)].filter { $0 }.count
+        guard flags.contains(.control) || strong >= 2 else { return .failure(.tooSimple) }
         var carbon: UInt32 = 0
         if flags.contains(.command) { carbon |= UInt32(cmdKey) }
         if flags.contains(.option) { carbon |= UInt32(optionKey) }
         if flags.contains(.control) { carbon |= UInt32(controlKey) }
         if flags.contains(.shift) { carbon |= UInt32(shiftKey) }
         let code = UInt32(event.keyCode)
-        let label = Self.specialKeys[Int(code)] ?? event.charactersIgnoringModifiers?.uppercased() ?? ""
-        guard !label.isEmpty, !label.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) else { return nil }
-        self.init(keyCode: code, modifiers: carbon, key: label)
+        let label = specialKeyLabel(Int(code)) ?? character(forKeyCode: code) ?? event.charactersIgnoringModifiers?.uppercased() ?? ""
+        guard !label.isEmpty, !label.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) else {
+            return .failure(.notAKey)
+        }
+        return .success(KeyCombo(keyCode: code, modifiers: carbon, key: label))
     }
 
     init(keyCode: UInt32, modifiers: UInt32, key: String) {
@@ -71,13 +88,66 @@ struct KeyCombo: Codable, Hashable {
         self.key = key
     }
 
-    private static let specialKeys: [Int: String] = [
-        kVK_F1: "F1", kVK_F2: "F2", kVK_F3: "F3", kVK_F4: "F4", kVK_F5: "F5", kVK_F6: "F6",
-        kVK_F7: "F7", kVK_F8: "F8", kVK_F9: "F9", kVK_F10: "F10", kVK_F11: "F11", kVK_F12: "F12",
-        kVK_LeftArrow: "←", kVK_RightArrow: "→", kVK_UpArrow: "↑", kVK_DownArrow: "↓",
-        kVK_Space: "Space", kVK_Return: "↩", kVK_Tab: "⇥", kVK_Home: "↖", kVK_End: "↘",
-        kVK_PageUp: "⇞", kVK_PageDown: "⇟", kVK_ForwardDelete: "⌦",
-    ]
+    /// Whether macOS itself uses this combination (Spotlight, screenshots, Mission Control…).
+    var isReservedBySystem: Bool {
+        var ref: Unmanaged<CFArray>?
+        guard CopySymbolicHotKeys(&ref) == noErr, let list = ref?.takeRetainedValue() as? [[String: Any]] else { return false }
+        return list.contains { entry in
+            guard (entry["kHISymbolicHotKeyEnabled"] as? Bool) == true,
+                  let code = (entry["kHISymbolicHotKeyCode"] as? NSNumber)?.uint32Value,
+                  let mods = (entry["kHISymbolicHotKeyModifiers"] as? NSNumber)?.uint32Value else { return false }
+            return code == keyCode && (mods & Self.modifierMask) == (modifiers & Self.modifierMask)
+        }
+    }
+
+    /// The character a key types on the current keyboard layout, e.g. "Z" or "Y" for the
+    /// same key on a German layout.
+    static func character(forKeyCode keyCode: UInt32) -> String? {
+        guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
+              let pointer = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData) else { return nil }
+        let data = Unmanaged<CFData>.fromOpaque(pointer).takeUnretainedValue() as Data
+        return data.withUnsafeBytes { raw -> String? in
+            guard let layout = raw.baseAddress?.assumingMemoryBound(to: UCKeyboardLayout.self) else { return nil }
+            var deadKeys: UInt32 = 0
+            var chars = [UniChar](repeating: 0, count: 4)
+            var length = 0
+            let status = UCKeyTranslate(layout, UInt16(keyCode), UInt16(kUCKeyActionDisplay), 0, UInt32(LMGetKbdType()),
+                                        OptionBits(kUCKeyTranslateNoDeadKeysBit), &deadKeys, chars.count, &length, &chars)
+            guard status == noErr, length > 0 else { return nil }
+            let text = String(utf16CodeUnits: chars, count: length).uppercased()
+            return text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : text
+        }
+    }
+
+    static func specialKeyLabel(_ code: Int) -> String? {
+        switch code {
+        case kVK_Space: String(localized: "Space")
+        case kVK_F1: "F1"
+        case kVK_F2: "F2"
+        case kVK_F3: "F3"
+        case kVK_F4: "F4"
+        case kVK_F5: "F5"
+        case kVK_F6: "F6"
+        case kVK_F7: "F7"
+        case kVK_F8: "F8"
+        case kVK_F9: "F9"
+        case kVK_F10: "F10"
+        case kVK_F11: "F11"
+        case kVK_F12: "F12"
+        case kVK_LeftArrow: "←"
+        case kVK_RightArrow: "→"
+        case kVK_UpArrow: "↑"
+        case kVK_DownArrow: "↓"
+        case kVK_Return: "↩"
+        case kVK_Tab: "⇥"
+        case kVK_Home: "↖"
+        case kVK_End: "↘"
+        case kVK_PageUp: "⇞"
+        case kVK_PageDown: "⇟"
+        case kVK_ForwardDelete: "⌦"
+        default: nil
+        }
+    }
 }
 
 /// System-wide keyboard shortcuts through Carbon's RegisterEventHotKey — public API that

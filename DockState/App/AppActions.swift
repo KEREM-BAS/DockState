@@ -3,6 +3,7 @@ import Observation
 import ServiceManagement
 import SwiftUI
 import UniformTypeIdentifiers
+import Carbon.HIToolbox
 import DockStateCore
 import DockStateSystem
 
@@ -43,9 +44,12 @@ final class AppActions {
     }
 
     func finishOnboarding() {
+        let wasCompleted = model.settings.hasCompletedOnboarding
         model.settings.hasCompletedOnboarding = true
         model.stopWatchingPermission()
         router.close(WindowID.onboarding)
+        // The launch skips the store alert during onboarding; show it once onboarding ends.
+        if !wasCompleted, model.storeIsReadOnly, let issue = model.storeIssue { reportStoreIssue(issue) }
     }
 
     /// Asks for permission and remembers what to do once it's granted.
@@ -137,18 +141,106 @@ final class AppActions {
 
     func quit() { NSApp.terminate(nil) }
 
-    /// Shortcuts macOS refused because something else already uses them.
+    /// Shortcuts macOS refused to register.
     var shortcutConflicts: Set<ShortcutAction> = []
+    /// The action whose shortcut is being recorded in Settings, if any.
+    var recordingAction: ShortcutAction?
+    /// Why the last key press couldn't be used, shown under the recorder.
+    var recordingProblem: String?
+    @ObservationIgnored private var recordingMonitor: Any?
+    @ObservationIgnored private var recordingObservers: [NSObjectProtocol] = []
 
     func installHotKeys() {
         HotKeyCenter.shared.unregisterAll()
         shortcutConflicts = []
-        guard model.settings.globalShortcutsEnabled else { return }
+        guard model.settings.globalShortcutsEnabled, recordingAction == nil else { return }
         for action in ShortcutAction.allCases {
             guard let combo = model.settings.shortcuts[action] else { continue }
             let ok = HotKeyCenter.shared.register(action.hotKeyID, combo) { [weak self] in self?.perform(action) }
             if !ok { shortcutConflicts.insert(action) }
         }
+    }
+
+    /// The shortcut that actually works for `action` (nil when off or refused by macOS).
+    func activeShortcut(for action: ShortcutAction) -> KeyCombo? {
+        guard model.settings.globalShortcutsEnabled, !shortcutConflicts.contains(action) else { return nil }
+        return model.settings.shortcuts[action]
+    }
+
+    /// Starts recording a shortcut. DockState's own hot keys are switched off meanwhile —
+    /// otherwise pressing one would run its action instead of being recorded. Only key
+    /// presses in the Settings window count, and recording stops as soon as that window
+    /// or DockState loses focus.
+    func startRecording(_ action: ShortcutAction) {
+        stopRecording(reinstall: false)
+        recordingAction = action
+        recordingProblem = nil
+        HotKeyCenter.shared.unregisterAll()
+        recordingMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard event.window?.identifier?.rawValue == WindowID.settings else { return event }
+            return MainActor.assumeIsolated { self?.handleRecording(event) ?? false } ? nil : event
+        }
+        // Delivered on the main queue.
+        let stop: @Sendable (Notification) -> Void = { [weak self] _ in
+            MainActor.assumeIsolated { self?.stopRecording() }
+        }
+        let settingsWindow = NSApp.windows.first { $0.identifier?.rawValue == WindowID.settings }
+        recordingObservers = [
+            NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: settingsWindow, queue: .main, using: stop),
+            NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: settingsWindow, queue: .main, using: stop),
+            NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main, using: stop),
+        ]
+        FloatingPanel.announce(String(localized: "Recording. Press the new shortcut, or Escape to cancel."))
+    }
+
+    func stopRecording(reinstall: Bool = true) {
+        if let monitor = recordingMonitor { NSEvent.removeMonitor(monitor) }
+        recordingMonitor = nil
+        recordingObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        recordingObservers = []
+        let wasRecording = recordingAction != nil
+        recordingAction = nil
+        if reinstall && wasRecording { installHotKeys() }
+    }
+
+    /// Returns true when the event was used by the recorder.
+    private func handleRecording(_ event: NSEvent) -> Bool {
+        guard let action = recordingAction else { return false }
+        switch Int(event.keyCode) {
+        case kVK_Escape:
+            stopRecording()
+            return true
+        case kVK_Delete, kVK_ForwardDelete:
+            model.settings.shortcuts[action] = nil
+            FloatingPanel.announce(String(localized: "Shortcut removed"))
+            stopRecording()
+            return true
+        default:
+            break
+        }
+        switch KeyCombo.from(event: event) {
+        case .failure(.tooSimple):
+            reject(String(localized: "Use ⌃, or two of ⌘ ⌥ ⌃, so normal typing and app commands keep working."))
+        case .failure(.notAKey):
+            reject(String(localized: "That key can’t be used in a shortcut."))
+        case .success(let combo):
+            if let other = ShortcutAction.allCases.first(where: { $0 != action && model.settings.shortcuts[$0] == combo }) {
+                reject(String(localized: "Already used for “\(other.title)”."))
+            } else if combo.isReservedBySystem {
+                reject(String(localized: "macOS already uses this shortcut."))
+            } else {
+                model.settings.shortcuts[action] = combo
+                FloatingPanel.announce(String(localized: "Shortcut set to \(combo.display)"))
+                stopRecording()
+            }
+        }
+        return true
+    }
+
+    private func reject(_ reason: String) {
+        recordingProblem = reason
+        NSSound.beep()
+        FloatingPanel.announce(reason)
     }
 
     private func perform(_ action: ShortcutAction) {
@@ -194,15 +286,37 @@ final class AppActions {
 
     // MARK: Updates
 
-    /// Runs the daily check if the user turned it on. Results arrive as a notification.
-    func checkForUpdatesIfDue() {
+    /// Runs the daily check if the user turned it on. Results arrive as a notification and
+    /// in Settings. Called at launch, after wake and hourly; a failure is retried once.
+    func checkForUpdatesIfDue(isRetry: Bool = false) {
         guard updateChecker.isDue else { return }
+        isCheckingForUpdates = true
         Task {
-            if case .available(let version, let url) = await updateChecker.check() {
+            let outcome = await updateChecker.check()
+            isCheckingForUpdates = updateChecker.isChecking
+            switch outcome {
+            case .available(let version, let url):
+                if availableUpdate?.version != version { model.presenter?.notifyUpdate(version: version, url: url) }
                 availableUpdate = (version, url)
-                model.presenter?.notifyUpdate(version: version, url: url)
+            case .upToDate:
+                availableUpdate = nil
+            case .failed:
+                // Often the network isn't back yet right after wake.
+                if !isRetry {
+                    try? await Task.sleep(for: .seconds(60))
+                    checkForUpdatesIfDue(isRetry: true)
+                }
             }
         }
+    }
+
+    /// Re-evaluates hourly whether the daily check is due (a Mac that never sleeps).
+    func startUpdateTimer() {
+        let timer = Timer(timeInterval: 3600, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.checkForUpdatesIfDue() }
+        }
+        timer.tolerance = 600
+        RunLoop.main.add(timer, forMode: .common)
     }
 
     /// "Check Now": always answers, even when there's nothing new.
@@ -210,7 +324,7 @@ final class AppActions {
         isCheckingForUpdates = true
         Task {
             let outcome = await updateChecker.check()
-            isCheckingForUpdates = false
+            isCheckingForUpdates = updateChecker.isChecking
             switch outcome {
             case .available(let version, let url):
                 availableUpdate = (version, url)
@@ -257,8 +371,9 @@ final class AppActions {
         NSApp.activate(ignoringOtherApps: true)
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
-            let count = try model.importWorkspaces(from: Data(contentsOf: url))
-            model.presenter?.toast(String(localized: "Imported \(count) workspaces"))
+            if let count = try model.importWorkspaces(from: Data(contentsOf: url)) {
+                model.presenter?.toast(String(localized: "Imported \(count) workspaces"))
+            }
         } catch WorkspaceTransfer.ImportError.empty {
             showError(String(localized: "Nothing to import"), String(localized: "The file doesn’t contain any workspaces."))
         } catch {

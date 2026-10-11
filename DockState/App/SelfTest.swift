@@ -22,6 +22,17 @@ enum SelfTest {
         return true
     }
 
+    /// Quits the app, opens `file` again, lets DockState react, and returns the new window.
+    private static func relaunch(_ bundleID: String, file: String, name: String, model: AppModel) async -> LiveWindow? {
+        guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first else { return nil }
+        app.terminate()
+        for _ in 0..<40 where !app.isTerminated { try? await Task.sleep(for: .milliseconds(250)) }
+        NSWorkspace.shared.open(URL(fileURLWithPath: file))
+        await model.placeLateApp(bundleID)
+        await model.refresh()
+        return model.liveWindows.first { $0.bundleID == bundleID && $0.title?.contains(name) == true }
+    }
+
     private static func run(bundleID: String) async -> String {
         var log: [String] = []
         func check(_ ok: Bool, _ what: String) { log.append("\(ok ? "PASS" : "FAIL") \(what)") }
@@ -85,26 +96,26 @@ enum SelfTest {
         }
 
         var windowID = target.id
-        // Late placement: quit the app and open the document again; DockState must put the
-        // window back. Only with a dedicated test document, never with the user's windows.
+        // Late placement: quit the app and open it again. Only with the dedicated test app
+        // (or a test document), never with the developer's own windows.
         if let file = UserDefaults.standard.string(forKey: "DockStateSelfTestFile") {
             let name = URL(fileURLWithPath: file).deletingPathExtension().lastPathComponent
             let windowsOfApp = model.liveWindows.filter { $0.bundleID == bundleID && $0.isStandard }
-            if windowsOfApp.count == 1, windowsOfApp[0].title?.contains(name) == true,
-               let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first {
-                app.terminate()
-                for _ in 0..<40 where !app.isTerminated { try? await Task.sleep(for: .milliseconds(250)) }
-                NSWorkspace.shared.open(URL(fileURLWithPath: file))
-                await model.placeLateApp(bundleID)
-                await model.refresh()
-                if let reopened = model.liveWindows.first(where: { $0.bundleID == bundleID && $0.title?.contains(name) == true }) {
+            if windowsOfApp.count == 1, windowsOfApp[0].title?.contains(name) == true {
+                // 1. Right after Undo the user has withdrawn consent: nothing may move.
+                if let reopened = await relaunch(bundleID, file: file, name: name, model: model) {
+                    check(!reopened.frame.isPlacementEquivalent(to: original),
+                          "after Undo, an app opened later is left alone (\(reopened.frame))")
                     windowID = reopened.id
-                    check(reopened.frame.isPlacementEquivalent(to: original), "app opened later was placed (\(reopened.frame))")
-                } else {
-                    check(false, "reopened document window not found")
+                }
+                // 2. After a restore, an app opened later goes to its saved place.
+                if let ws = model.workspace(id: ws.id) { await model.restore(ws) }
+                if let reopened = await relaunch(bundleID, file: file, name: name, model: model) {
+                    check(reopened.frame.isPlacementEquivalent(to: original), "app opened after a restore was placed (\(reopened.frame))")
+                    windowID = reopened.id
                 }
             } else {
-                log.append("SKIP late placement: \(windowsOfApp.count) windows, titles \(windowsOfApp.map { $0.title ?? "-" }), looking for \(name)")
+                log.append("SKIP late placement: \(windowsOfApp.count) windows of the app are open")
             }
         }
 

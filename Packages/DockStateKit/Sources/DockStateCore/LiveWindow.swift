@@ -82,11 +82,26 @@ public enum WorkspaceCapture {
 public extension Workspace {
     /// Live windows that currently correspond to this workspace's excluded windows, so an
     /// update from the current layout can keep them excluded (by identity, not by title).
-    func liveIDsOfExcludedWindows(in live: [LiveWindow], runningBundleIDs: Set<String>) -> Set<LiveWindowID> {
-        let outcomes = WindowMatcher.match(saved: windows, live: live, runningBundleIDs: runningBundleIDs, expectedDisplays: [:])
+    ///
+    /// When an excluded window can't be told apart from its siblings, every unclaimed
+    /// window of that app is returned: excluding too much is safe, moving a window the
+    /// user excluded is not.
+    func liveIDsOfExcludedWindows(in live: [LiveWindow], currentDisplays: [DisplayDescriptor],
+                                  runningBundleIDs: Set<String>) -> Set<LiveWindowID> {
+        let expected = DisplayMatcher.match(saved: displays, current: currentDisplays).mapping.mapValues(\.frame)
+        let outcomes = WindowMatcher.match(saved: windows, live: live, runningBundleIDs: runningBundleIDs, expectedDisplays: expected)
+        var claimedByIncluded = Set<LiveWindowID>()
+        for w in windows where !w.isExcluded {
+            if case .matched(let l) = outcomes[w.id] { claimedByIncluded.insert(l.id) }
+        }
         var ids = Set<LiveWindowID>()
         for w in windows where w.isExcluded {
-            if case .matched(let l) = outcomes[w.id] { ids.insert(l.id) }
+            switch outcomes[w.id] {
+            case .matched(let l): ids.insert(l.id)
+            case .ambiguous:
+                for l in live where l.bundleID == w.bundleID && !claimedByIncluded.contains(l.id) { ids.insert(l.id) }
+            default: break
+            }
         }
         return ids
     }

@@ -22,6 +22,7 @@ final class WindowRouter {
         if resizable { mask.insert(.resizable); mask.insert(.miniaturizable) }
         let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: mask, backing: .buffered, defer: false)
         window.title = title
+        window.identifier = NSUserInterfaceItemIdentifier(id)
         window.titleVisibility = titleVisible ? .visible : .hidden
         window.isReleasedWhenClosed = false
         let controller = NSHostingController(rootView: content())

@@ -541,12 +541,12 @@
         }
       }
     },
-    "Already used by another app or by macOS. Choose another shortcut.": {
+    "Already used for “%@”.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Başka bir uygulama veya macOS tarafından kullanılıyor. Başka bir kısayol seçin."
+            "value": "Zaten “%@” için kullanılıyor."
           }
         }
       }
@@ -661,6 +661,16 @@
         }
       }
     },
+    "Changes aren’t saved: the damaged workspace file couldn’t be backed up.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Değişiklikler kaydedilmedi: hasarlı çalışma alanı dosyasının yedeği alınamadı."
+          }
+        }
+      }
+    },
     "Changes aren’t saved: the workspace file is from a newer DockState.": {
       "localizations": {
         "tr": {
@@ -727,6 +737,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bu Sürüme Dönüştür"
+          }
+        }
+      }
+    },
+    "Convert…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dönüştür…"
           }
         }
       }
@@ -1419,8 +1439,50 @@
       "localizations": {
         "en": {
           "stringUnit": {
-            "state": "new",
-            "value": "Layout of %1$lld windows on %2$lld displays"
+            "state": "translated",
+            "value": "Layout of %#@windows@ on %#@displays@"
+          },
+          "substitutions": {
+            "displays": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg display"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg displays"
+                    }
+                  }
+                }
+              }
+            },
+            "windows": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg window"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg windows"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "tr": {
@@ -1915,6 +1977,16 @@
         }
       }
     },
+    "Recording. Press the new shortcut, or Escape to cancel.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydediliyor. Yeni kısayola basın ya da iptal etmek için Escape’e basın."
+          }
+        }
+      }
+    },
     "Records your screen or keystrokes": {
       "localizations": {
         "tr": {
@@ -1941,6 +2013,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kısayolu kaldır"
+          }
+        }
+      }
+    },
+    "Remove shortcut for %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kısayolunu kaldır"
           }
         }
       }
@@ -2243,6 +2325,26 @@
         }
       }
     },
+    "Shortcut removed": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kısayol kaldırıldı"
+          }
+        }
+      }
+    },
+    "Shortcut set to %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kısayol %@ olarak ayarlandı"
+          }
+        }
+      }
+    },
     "Shortcuts": {
       "localizations": {
         "tr": {
@@ -2303,6 +2405,16 @@
         }
       }
     },
+    "Space": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boşluk"
+          }
+        }
+      }
+    },
     "Status": {
       "localizations": {
         "tr": {
@@ -2329,6 +2441,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sistem (%@)"
+          }
+        }
+      }
+    },
+    "That key can’t be used in a shortcut.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu tuş bir kısayolda kullanılamaz."
           }
         }
       }
@@ -2603,6 +2725,16 @@
         }
       }
     },
+    "Use ⌃, or two of ⌘ ⌥ ⌃, so normal typing and app commands keep working.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal yazma ve uygulama komutları çalışmaya devam etsin diye ⌃ ya da ⌘ ⌥ ⌃ tuşlarından ikisini kullanın."
+          }
+        }
+      }
+    },
     "View on GitHub": {
       "localizations": {
         "tr": {
@@ -2873,12 +3005,32 @@
         }
       }
     },
+    "macOS already uses this shortcut.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu kısayolu macOS zaten kullanıyor."
+          }
+        }
+      }
+    },
     "macOS asks you to approve any app that moves other apps’ windows. DockState uses this permission only to read and set window positions and sizes.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
             "value": "macOS, başka uygulamaların pencerelerini taşıyan her uygulamayı onaylamanızı ister. DockState bu izni yalnızca pencere konumlarını ve boyutlarını okumak ve ayarlamak için kullanır."
+          }
+        }
+      }
+    },
+    "macOS didn’t accept this shortcut. Choose another one.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS bu kısayolu kabul etmedi. Başka bir kısayol seçin."
           }
         }
       }

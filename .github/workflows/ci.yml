@@ -6,8 +6,9 @@ on:
   pull_request:
 
 concurrency:
-  group: ci-${{ github.ref }}
-  # Superseded pull request runs are cancelled; every push to main is checked.
+  # Pull requests share a group per branch (superseded runs are cancelled); each push to
+  # main gets its own group, so every commit on main is checked.
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:

@@ -55,7 +55,9 @@ public extension Array where Element == DisplayDescriptor {
     /// Identifies a display configuration: which displays, where, at what resolution.
     /// Deliberately ignores `visibleFrame`, which changes when the Dock moves or hides.
     var setupKey: String {
-        map { "\($0.id)@\(Int($0.frame.x)),\(Int($0.frame.y)) \(Int($0.frame.width))x\(Int($0.frame.height))/\($0.pixelWidth)x\($0.pixelHeight)" }
+        // Duplicate-id suffixes ("#2") depend on enumeration order, so they're left out;
+        // the frames already tell identical displays apart.
+        map { "\($0.id.split(separator: "#").first.map(String.init) ?? $0.id)@\(Int($0.frame.x)),\(Int($0.frame.y)) \(Int($0.frame.width))x\(Int($0.frame.height))/\($0.pixelWidth)x\($0.pixelHeight)" }
             .sorted()
             .joined(separator: "|")
     }
