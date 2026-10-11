@@ -164,11 +164,12 @@ private struct PlanList: View {
                                     .font(.system(size: 10.5)).foregroundStyle(.tertiary)
                             }
                             Spacer()
-                            if item.skipReason == .appNotRunning, AppLauncher.isInstalled(item.saved.bundleID) {
+                            if model.canOpenAndPlace(item.saved, reason: item.skipReason!) {
                                 Button(String(localized: "Open \(item.saved.appName)")) {
                                     Task { await model.openAndPlace(bundleID: item.saved.bundleID, workspace: workspace) }
                                 }
                                 .controlSize(.small)
+                                .disabled(model.isBusy)
                             }
                         }
                         .padding(.horizontal, 16).padding(.vertical, 5)

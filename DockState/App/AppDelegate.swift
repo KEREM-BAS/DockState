@@ -105,6 +105,10 @@ extension AppDelegate: Presenter {
         }
     }
 
+    func showPreview(_ workspace: Workspace) {
+        actions.showPreview(workspace)
+    }
+
     func notifyMatch(workspace: Workspace, moves: Int) {
         let content = UNMutableNotificationContent()
         content.title = String(localized: "\(workspace.name) displays connected")
@@ -173,7 +177,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         await MainActor.run {
             switch (category, action) {
             case (Notifications.matchCategory, Notifications.restoreAction):
-                if let id = workspaceID, let ws = model.workspace(id: id) { Task { await model.restore(ws) } }
+                if let id = workspaceID { Task { await model.restoreFromNotification(workspaceID: id) } }
             case (Notifications.matchCategory, _):
                 if let id = workspaceID, let ws = model.workspace(id: id) { actions.showPreview(ws) }
             case (Notifications.newSetupCategory, Notifications.saveAction), (Notifications.newSetupCategory, UNNotificationDefaultActionIdentifier):
