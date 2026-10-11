@@ -26,6 +26,13 @@ cat /tmp/dockstate-selftest.txt
 It saves the window into a throw-away store, moves it, verifies recognition, restores, verifies the frame,
 undoes, verifies again, and puts the window back. Use `-DockStateSelfTestApp <bundle id>` to target another app.
 
+## Demo mode (Debug builds)
+
+`-DockStateDemo YES` replaces live data with a fictional three-display desk (no real windows are read or
+moved, nothing is saved). Combine with `-DockStateOpen popover|preview|result|manage|firstSave|settings`
+to open a screen directly, and `-DockStateDemoArranged YES` for an already-arranged desk. All README
+screenshots are made this way, so no real window titles end up in the repository.
+
 ## Manual checklist (real hardware)
 
 These depend on hardware and timing and can't be simulated faithfully. Check the relevant ones for changes

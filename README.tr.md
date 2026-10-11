@@ -32,9 +32,11 @@ Siz onay vermeden hiçbir pencere taşınmaz.
 
 ## Ekran görüntüleri
 
-| İzin ekranı (Türkçe) | Hoş geldiniz |
+| Menü çubuğu | Geri yükleme önizlemesi |
 | --- | --- |
-| ![Erişilebilirlik izni](docs/images/onboarding-permission-tr.png) | ![Karşılama](docs/images/onboarding-welcome.png) |
+| ![Menü çubuğu](docs/images/popover.png) | ![Önizleme](docs/images/restore-preview.png) |
+| **Sonuç ve Geri Al** | **İzin ekranı (Türkçe)** |
+| ![Sonuç](docs/images/result.png) | ![Erişilebilirlik izni](docs/images/onboarding-permission-tr.png) |
 
 ## Özellikler
 
