@@ -70,7 +70,7 @@ struct ResultCard: View {
     private func subtitle(_ r: RestoreResult) -> String {
         if r.movedCount == 0 && r.notRestored.isEmpty { return String(localized: "Everything was already in place.") }
         if r.notRestored.isEmpty { return String(localized: "\(r.movedCount) windows are back in place.") }
-        return String(localized: "\(r.movedCount) windows moved. \(r.notRestored.count) couldn’t be restored.")
+        return String(localized: "\(r.movedCount) windows moved.") + " " + String(localized: "\(r.notRestored.count) couldn’t be restored.")
     }
 }
 
