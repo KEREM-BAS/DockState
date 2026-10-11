@@ -6,7 +6,7 @@ Reliability lives in a pure-Swift core that is unit-tested; the parts that touch
 ```
 ┌──────────────────────── DockState.app (UI) ────────────────────────┐
 │ Status item + panel · Onboarding · Preview · Result card · Manage  │
-│ Settings · Notifications · Shortcuts · Login item · Update check   │
+│ Settings · Notifications · Shortcuts · Login item · Updates        │
 │                AppModel (@MainActor, @Observable)                  │
 └───────────────┬─────────────────────────────────┬──────────────────┘
                 │                                 │
@@ -18,14 +18,16 @@ Reliability lives in a pure-Swift core that is unit-tested; the parts that touch
    ─ RestoreExecutor + undo
    ─ AutoRestorePolicy, LatePlacementPolicy
    ─ WorkspaceStore, WorkspaceTransfer
-   ─ UpdateCheck (semver, Atom feed)
+
+   Sparkle (Swift package, app target only): in-app updates (AppUpdater)
 ```
 
 ## Key decisions
 
 **Accessibility API, no sandbox.** Moving other apps' windows is only possible through the Accessibility
 API (`AXUIElement`), which sandboxed apps cannot use. DockState is therefore distributed outside the Mac App
-Store with Developer ID + notarization and Hardened Runtime.
+Store with Developer ID + notarization and Hardened Runtime. Release builds always have the hardened runtime;
+ad-hoc ones (no team ID) add only `com.apple.security.cs.disable-library-validation` so Sparkle.framework loads.
 
 **No Screen Recording.** Window positions come from Accessibility; previews are schematic maps. Asking for
 screen recording just to draw thumbnails would be a far bigger privacy ask than the feature is worth.
@@ -134,5 +136,12 @@ settle, around a restore, when an app launches (only that app is polled while it
 the user switches apps while a workspace is recognized (at most every 15 s, to keep the menu bar dot honest).
 Accessibility calls run off the main thread. A 1 s timer runs only while onboarding waits for permission.
 
-The only network request is the opt-in update check: GitHub's `releases.atom` feed (no account, no
-identifiers, no API rate limit), at most once a day, re-evaluated hourly and retried once after a failure.
+The only network access is updating, through [Sparkle](https://sparkle-project.org) (`AppUpdater`). Nothing
+is requested before the user agrees: the updater starts only after onboarding, and Sparkle then asks once
+whether to check automatically (`updaterShouldPromptForPermissionToCheck`). The feed is the `appcast.xml`
+attached to the latest GitHub release (`SUFeedURL` in `Config/Info.plist`), read at most once a day. Updates
+are verified with EdDSA before extraction (`SUVerifyUpdateBeforeExtraction`) and by code signature. Because
+DockState lives in the menu bar, an update found in the background is shown as a gentle reminder (a row in the
+panel and a notification) instead of a window behind other apps. Sparkle's XPC services aren't shipped: they
+exist for sandboxed apps. Sparkle uses the app's shared cookie storage, so DockState turns cookies off
+(`HTTPCookieStorage.shared.cookieAcceptPolicy = .never`) to keep checks unlinkable.
