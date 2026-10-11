@@ -9,10 +9,22 @@ private let log = Logger(subsystem: "app.dockstate", category: "app")
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    let model = AppModel()
+    let model: AppModel = {
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "DockStateDemo") {
+            let model = AppModel(settings: AppSettings(defaults: UserDefaults(suiteName: "dockstate.demo")!), storeURL: nil)
+            model.loadDemo()
+            return model
+        }
+        #endif
+        return AppModel()
+    }()
     lazy var actions = AppActions(model: model)
     private let resultPanel = FloatingPanel()
     private let toastPanel = FloatingPanel()
+    #if DEBUG
+    private let router = WindowRouter()
+    #endif
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         #if DEBUG
@@ -46,6 +58,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "onboarding": actions.showOnboarding(step: .welcome)
         case "permission": actions.showOnboarding(step: .permission)
         case "firstSave": actions.showOnboarding(step: .firstSave)
+        case "popover":
+            router.show("popover", title: "DockState", size: NSSize(width: 320, height: 400), style: [.titled], titleVisible: false) {
+                MenuBarPopover().environment(model).environment(actions)
+            }
+        case "result":
+            model.loadDemoResult()
+            showResult()
         case "preview":
             if let ws = model.recognized?.workspace ?? model.workspaces.first { actions.showPreview(ws) }
         default: return false

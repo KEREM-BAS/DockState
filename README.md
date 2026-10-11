@@ -33,13 +33,22 @@ Nothing moves without you saying so.
 
 ## Screenshots
 
-| Welcome | Permission, explained plainly |
-| --- | --- |
-| ![Onboarding welcome](docs/images/onboarding-welcome.png) | ![Accessibility permission](docs/images/onboarding-permission.png) |
+<table>
+<tr>
+<td width="38%" valign="top"><img src="docs/images/popover.png" alt="Menu bar popover suggesting the matching workspace"><br><sub><b>Menu bar.</b> When your displays match a saved workspace, DockState offers it — nothing more.</sub></td>
+<td valign="top"><img src="docs/images/restore-preview.png" alt="Restore preview with Now/After map"><br><sub><b>Preview.</b> Exactly what will move, what's already in place and what can't be restored — before anything moves.</sub></td>
+</tr>
+<tr>
+<td valign="top"><img src="docs/images/result.png" alt="Result card with Undo"><br><sub><b>Result.</b> Success first, then what's missing with a one-click fix. Undo is always there.</sub></td>
+<td valign="top"><img src="docs/images/manage.png" alt="Manage workspaces window"><br><sub><b>Manage.</b> Displays, automation per workspace, and which windows to include.</sub></td>
+</tr>
+<tr>
+<td valign="top"><img src="docs/images/onboarding-permission.png" alt="Accessibility permission explained"><br><sub><b>Permission, explained plainly.</b> What DockState can do, and what it never does.</sub></td>
+<td valign="top"><img src="docs/images/onboarding-first-save.png" alt="Saving the first workspace"><br><sub><b>First workspace.</b> A suggested name and every window pre-selected — one click.</sub></td>
+</tr>
+</table>
 
-| Restore settings | About |
-| --- | --- |
-| ![Restore settings](docs/images/settings-restore.png) | ![About](docs/images/settings-about.png) |
+<sub>Screenshots use a fictional desk (Debug builds: <code>-DockStateDemo YES</code>).</sub>
 
 ## Features
 

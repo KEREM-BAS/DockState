@@ -33,10 +33,10 @@ struct LayoutMapView: View {
                 ForEach(displays) { d in
                     let r = t.rect(d.frame)
                     RoundedRectangle(cornerRadius: max(3, r.width * 0.02))
-                        .fill(Color(nsColor: .textBackgroundColor).opacity(0.9))
+                        .fill(Color.primary.opacity(0.07))
                         .overlay(
                             RoundedRectangle(cornerRadius: max(3, r.width * 0.02))
-                                .strokeBorder(Color.primary.opacity(0.75), lineWidth: max(1.5, r.width * 0.012)))
+                                .strokeBorder(Color.primary.opacity(0.55), lineWidth: max(2, r.width * 0.014)))
                         .frame(width: r.width, height: r.height)
                         .offset(x: r.minX, y: r.minY)
                         .accessibilityLabel(d.name)
