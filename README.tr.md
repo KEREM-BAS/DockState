@@ -60,10 +60,11 @@ Siz onay vermeden hiçbir pencere taşınmaz.
 - **Yalnızca “2 ekran” değil, masanızı tanır** — monitörler EDID üretici/model/seri numarası, ekran UUID’si ve yerleşimle tanımlanır. Farklı porta takılan veya çözünürlüğü değişen monitör yine *sizin* monitörünüzdür; aynı modelden iki monitör konumlarıyla ayırt edilir. Fazladan bir ekran (Sidecar, projeksiyon, kapağı açmak) masanızın tanınmasını engellemez.
 - **Taşımadan önce önizleme** — Şimdi / Sonra haritası ve kesin listeler: *taşınacak*, *zaten yerinde*, *geri yüklenmeyecek (ve nedeni)*.
 - **Geri alma** — her pencereyi geri yükleme öncesindeki yerine koyar. Sonradan sizin taşıdığınız pencerelere dokunmaz.
-- **Kısmi başarısızlık sorun değil** — açık olmayan bir uygulama ya da kapatılmış bir pencere nedeniyle birlikte bildirilir (*Aç ve Yerleştir* düğmesiyle) ve diğerlerini asla durdurmaz.
+- **Eksikleri açar** — bir çalışma alanını geri yüklediğinizde açık olmayan uygulamaları açar ve pencerelerini yerine koyar (sizin başlattığınız geri yüklemelerde; otomatik olanlar asla uygulama açmaz).
+- **Kısmi başarısızlık sorun değil** — kapatılmış bir pencere ya da açılamayan bir uygulama nedeniyle birlikte bildirilir ve diğerlerini asla durdurmaz.
 - **Otomasyonu siz seçersiniz** — her çalışma alanı için: *Bana sor* (bildirim, varsayılan), *Her zaman geri yükle* veya *Hiçbir şey yapma*. Otomatik geri yükleme yalnızca ekran düzeni gerçekten değiştiğinde olur — sıradan bir uyanma veya kilit açmada asla.
 - **Sonradan açtığınız uygulamalar** — bir çalışma alanını geri yükledikten sonra açtığınız uygulama (on dakika sonra açılan Slack) da kayıtlı yerine gider. Kendi Geri Al düğmesiyle.
-- **Menü çubuğu öncelikli** — gözünüzün önünden çekilir; pencereler yerinde değilse simgede bir nokta, izin eksikse bir rozet görünür.
+- **Menü çubuğu öncelikli** — gözünüzün önünden çekilir; simgeye sol veya sağ tıklayın. Pencereler yerinde değilse simgede bir nokta, izin eksikse bir rozet görünür. Bir DockState penceresi açıkken Dock’ta ve Cmd+Tab’de de görünür; pencereleri en üstte kalır (Ayarlar › Genel), böylece düzenlediğiniz uygulamaların arkasında kaybolmaz.
 - **İsterseniz klavye kısayolları** — kaydet, eşleşen düzeni geri yükle, geri al. Varsayılan olarak kapalıdır (genel kısayollar her uygulamada aynı tuşları devralır); Ayarlar’dan kendi kısayollarınızı kaydedin.
 - **Türkçe ve İngilizce**, uygulama içinden dil değiştirme. Yeni dillere katkı memnuniyetle karşılanır.
 
@@ -94,7 +95,7 @@ DockState yalnızca Apple’ın herkese açık API’lerini kullanır — özel 
 | --- | --- |
 | Geçerli Alan’daki normal pencereler | ✅ Kaydedilir ve geri yüklenir |
 | Bir uygulamanın birden çok penceresi | ✅ Başlık, boyut, ekran ve sırayla eşleştirilir; iki pencere ayırt edilemiyorsa DockState **tahmin etmek yerine atlar** |
-| Uygulama açık değil | ⏭️ Bildirilir; *Aç ve Yerleştir* uygulamayı açıp penceresini yerleştirir (ya da elle geri yüklemeler için *Önce aç* seçin) |
+| Uygulama açık değil | ✅ Geri yüklediğinizde açılır ve yerleştirilir (Ayarlar › Geri Yükle › *Bir uygulama açık değilse*); otomatik geri yüklemeler bunu yalnızca bildirir |
 | Geri yüklemeden sonra açılan uygulama | ✅ Otomatik yerleştirilir (Ayarlar › Geri Yükle › *Sonradan açtığınız uygulamaları yerleştir*) |
 | Kaydedildikten sonra kapatılan pencere | ⏭️ Kapatıldığı bildirilir |
 | Küçültülmüş pencereler | ⏭️ Küçültülmüş bırakılır ve bildirilir |

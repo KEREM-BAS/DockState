@@ -50,11 +50,25 @@ Automatic restores never launch apps.
 - A window that can't take the exact size (minimum sizes, Terminal's character grid) counts as in place once
   it got as close as the app allows.
 - Windows that straddle displays or hang off an edge stay that way as long as their title bar is reachable.
-- **If an app isn't open → Open it first** (manual restores only) launches missing apps and waits for their
-  windows. Otherwise use *Open & Place* in the preview or the result card — it also works for a running app
+- **If an app isn't open → Open it** (the default) launches missing apps when *you* restore — from the
+  preview, the menu bar, a notification or the shortcut — and places their windows once they appear (also
+  windows that show up after a splash or welcome window). The preview lists them under *Will open*, and the
+  result card says which apps were opened. Only apps whose windows have somewhere to go are opened; apps
+  that aren't installed are reported as such. Automatic (*Always restore*) restores never launch apps.
+  With **Skip it**, use *Open & Place* in the preview or the result card — it also works for a running app
   that has no window open.
 - **If a saved display is missing → Use main display** places those windows proportionally on the main
   display; **Leave windows in place** skips them.
+
+## The menu bar icon and DockState's windows
+
+- Left- or right-click the icon to open the panel. Esc, a click elsewhere or another click on the icon closes it.
+- While any DockState window (Manage, Settings, Preview, Save, onboarding) is open, DockState also shows in the
+  Dock and in Cmd+Tab; when the last one closes it goes back to being a menu bar app and focus returns to the
+  app you were in. Clicking the Dock icon brings the open windows forward.
+- *Settings › General › Keep DockState windows on top* (on by default) keeps those windows above other apps'
+  windows. Onboarding never floats (System Settings must stay visible while you grant permission), links open
+  in front of them, and the result card and toasts stay above them.
 
 ## Apps opened later
 
