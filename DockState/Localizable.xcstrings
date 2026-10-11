@@ -61,6 +61,44 @@
         }
       }
     },
+    "%@ · opens": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · açılacak"
+          }
+        }
+      }
+    },
+    "%lld apps aren’t open": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld app isn’t open"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld apps aren’t open"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld uygulama açık değil"
+          }
+        }
+      }
+    },
     "%lld couldn’t be restored.": {
       "localizations": {
         "tr": {
@@ -577,6 +615,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bu ekranlar bağlandığında %@ düzenini her zaman geri yükle"
+          }
+        }
+      }
+    },
+    "Applies when you restore. Automatic restores never open apps.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siz geri yüklediğinizde geçerlidir. Otomatik geri yüklemeler asla uygulama açmaz."
           }
         }
       }
@@ -1703,6 +1751,16 @@
         }
       }
     },
+    "Not open yet": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz açık değil"
+          }
+        }
+      }
+    },
     "Nothing to Restore": {
       "localizations": {
         "tr": {
@@ -1833,12 +1891,12 @@
         }
       }
     },
-    "Open it first": {
+    "Open it": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Önce aç"
+            "value": "Aç"
           }
         }
       }
@@ -2841,6 +2899,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Taşınacak · %lld"
+          }
+        }
+      }
+    },
+    "Will open · %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açılacak · %lld"
           }
         }
       }

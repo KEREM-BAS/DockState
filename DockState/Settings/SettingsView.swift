@@ -195,10 +195,11 @@ private struct RestoreSettings: View {
         @Bindable var settings = model.settings
         VStack(alignment: .leading, spacing: 14) {
             SettingsGroup {
-                SettingsRow(title: String(localized: "If an app isn’t open")) {
+                SettingsRow(title: String(localized: "If an app isn’t open"),
+                            subtitle: String(localized: "Applies when you restore. Automatic restores never open apps.")) {
                     Picker(String(localized: "If an app isn’t open"), selection: $settings.appNotRunningPolicy) {
+                        Text("Open it").tag(AppNotRunningPolicy.openFirst)
                         Text("Skip it").tag(AppNotRunningPolicy.skip)
-                        Text("Open it first").tag(AppNotRunningPolicy.openFirst)
                     }
                     .labelsHidden().fixedSize()
                 }

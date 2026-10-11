@@ -28,6 +28,12 @@ enum SelfTest {
         app.terminate()
         for _ in 0..<40 where !app.isTerminated { try? await Task.sleep(for: .milliseconds(250)) }
         NSWorkspace.shared.open(URL(fileURLWithPath: file))
+        // Let the window appear first, so "left alone" can be told from "not there yet".
+        for _ in 0..<40 {
+            await model.refresh()
+            if model.liveWindows.contains(where: { $0.bundleID == bundleID && $0.title?.contains(name) == true }) { break }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
         await model.placeLateApp(bundleID)
         await model.refresh()
         return model.liveWindows.first { $0.bundleID == bundleID && $0.title?.contains(name) == true }
@@ -107,12 +113,34 @@ enum SelfTest {
                     check(!reopened.frame.isPlacementEquivalent(to: original),
                           "after Undo, an app opened later is left alone (\(reopened.frame))")
                     windowID = reopened.id
+                } else {
+                    check(false, "relaunched app's window not found")
                 }
                 // 2. After a restore, an app opened later goes to its saved place.
                 if let ws = model.workspace(id: ws.id) { await model.restore(ws) }
                 if let reopened = await relaunch(bundleID, file: file, name: name, model: model) {
                     check(reopened.frame.isPlacementEquivalent(to: original), "app opened after a restore was placed (\(reopened.frame))")
                     windowID = reopened.id
+                } else {
+                    check(false, "relaunched app's window not found")
+                }
+                // 3. A manual restore opens an app that isn't running and places its window.
+                if model.settings.appNotRunningPolicy == .openFirst,
+                   let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first {
+                    app.terminate()
+                    for _ in 0..<40 where !app.isTerminated { try? await Task.sleep(for: .milliseconds(250)) }
+                    await model.refresh()
+                    if let ws = model.workspace(id: ws.id) {
+                        check(model.appsToOpen(for: model.plan(for: ws)) == [bundleID], "quit app is listed to open")
+                        await model.restore(ws)
+                    }
+                    await model.refresh()
+                    if let reopened = model.liveWindows.first(where: { $0.bundleID == bundleID && $0.title?.contains(name) == true }) {
+                        check(reopened.frame.isPlacementEquivalent(to: original), "restore opened the app and placed its window (\(reopened.frame))")
+                        windowID = reopened.id
+                    } else {
+                        check(false, "restore didn't open the app")
+                    }
                 }
             } else {
                 log.append("SKIP late placement: \(windowsOfApp.count) windows of the app are open")

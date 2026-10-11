@@ -44,7 +44,8 @@ final class AppSettings {
         notifyOnConnect = defaults.bool(forKey: Keys.notify)
         useWindowTitles = defaults.bool(forKey: Keys.titles)
         missingDisplayPolicy = defaults.string(forKey: Keys.missing).flatMap(MissingDisplayPolicy.init) ?? .useMainDisplay
-        appNotRunningPolicy = defaults.string(forKey: Keys.notRunning).flatMap(AppNotRunningPolicy.init) ?? .skip
+        // Choosing to restore a workspace means wanting its apps: open them by default.
+        appNotRunningPolicy = defaults.string(forKey: Keys.notRunning).flatMap(AppNotRunningPolicy.init) ?? .openFirst
         didPromptForAccessibility = defaults.bool(forKey: Keys.prompted)
         placeLateApps = defaults.bool(forKey: Keys.placeLate)
         checkForUpdates = defaults.bool(forKey: Keys.updates)

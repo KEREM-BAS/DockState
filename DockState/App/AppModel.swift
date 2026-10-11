@@ -570,12 +570,12 @@ final class AppModel {
 
         // Apps are only launched when the user restores by hand — an automatic restore
         // must never start apps the user had quit.
-        if !automatic, settings.appNotRunningPolicy == .openFirst {
-            let missing = plan.skipped.filter { $0.skipReason == .appNotRunning }.map(\.saved.bundleID)
-            if !missing.isEmpty {
+        if !automatic {
+            let toOpen = Set(appsToOpen(for: plan))
+            if !toOpen.isEmpty {
                 var expected: [String: Int] = [:]
-                for bundleID in missing { expected[bundleID, default: 0] += 1 }
-                for bundleID in expected.keys { _ = await AppLauncher.launch(bundleID) }
+                for item in windowsFromAppsToOpen(for: plan) { expected[item.saved.bundleID, default: 0] += 1 }
+                for bundleID in toOpen { _ = await AppLauncher.launch(bundleID) }
                 await waitForWindows(expected)
                 plan = self.plan(for: workspace)
             }
@@ -690,6 +690,20 @@ final class AppModel {
         presenter?.toast(String(localized: "Placed \(appName) for “\(current.name)”"), actionTitle: String(localized: "Undo")) { [weak self] in
             Task { await self?.undo(record) }
         }
+    }
+
+    /// Apps a restore started by the user would open first (installed ones, when
+    /// Settings › Restore › "If an app isn't open" is set to open them). Automatic restores
+    /// never open apps.
+    func appsToOpen(for plan: RestorePlan) -> [String] {
+        guard settings.appNotRunningPolicy == .openFirst else { return [] }
+        return plan.missingApps.filter { AppLauncher.isInstalled($0) }
+    }
+
+    /// Saved windows that will appear once `appsToOpen` are opened.
+    func windowsFromAppsToOpen(for plan: RestorePlan) -> [PlanItem] {
+        let apps = Set(appsToOpen(for: plan))
+        return plan.skipped.filter { $0.skipReason == .appNotRunning && apps.contains($0.saved.bundleID) }
     }
 
     /// Whether "Open & Place" makes sense for a skipped window: the app isn't running, or
