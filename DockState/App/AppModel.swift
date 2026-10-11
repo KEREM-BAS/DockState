@@ -41,13 +41,24 @@ final class AppModel {
     /// Frames the last restores achieved, so windows that can't take the exact size still
     /// count as in place afterwards.
     @ObservationIgnored private var settled: [LiveWindowID: SettledPlacement] = [:]
-    private(set) var isBusy = false
+    private(set) var isBusy = false {
+        didSet {
+            // A display change that arrived while DockState was busy is handled now.
+            if !isBusy, pendingSettle {
+                pendingSettle = false
+                Task { await displaysDidSettle() }
+            }
+        }
+    }
+    @ObservationIgnored private var pendingSettle = false
 
     /// The outcome of the last restore, shown in the result card.
     var lastResult: RestoreResult?
     private(set) var undoRecord: UndoRecord?
     /// Workspace removed with "Delete", kept until the toast's Undo expires.
-    private var recentlyDeleted: (workspace: Workspace, index: Int)?
+    private var recentlyDeleted: (workspace: Workspace, index: Int, date: Date)?
+    /// How long a deleted workspace can be brought back (toast Undo or ⌘Z in Manage).
+    static let deleteUndoWindow: TimeInterval = 15
 
     /// Hooks the UI layer sets up to present windows and transient UI.
     @ObservationIgnored var presenter: Presenter?
@@ -207,6 +218,7 @@ final class AppModel {
         guard permissionGranted else { liveWindows = []; return }
         let apps = runningApps, system = windowSystem
         liveWindows = await Task.detached(priority: .userInitiated) { system.windows(of: apps) }.value
+        system.prune(keepingPIDs: Set(apps.map(\.pid)))
     }
 
     @ObservationIgnored private var lastBackgroundRefresh = Date.distantPast
@@ -265,11 +277,11 @@ final class AppModel {
     /// unlock or Dock change on the same desk never moves windows or posts a notification.
     func displaysDidSettle(afterWakeRecheck: Bool = false) async {
         await refresh()
-        // External displays behind docks can appear seconds after wake. If fewer displays
-        // are back than before sleep, give them one more chance before treating the
+        // External displays behind docks can appear seconds after wake. If not every display
+        // from before sleep is back yet, give them one more chance before treating the
         // smaller setup as a change (which could trigger a pointless restore).
         if !afterWakeRecheck, let wake = lastWake, Date().timeIntervalSince(wake) < 15,
-           displays.count < displaysBeforeSleep.count {
+           !Set(displaysBeforeSleep.map(\.id)).isSubset(of: Set(displays.map(\.id))) {
             try? await Task.sleep(for: .seconds(5))
             await displaysDidSettle(afterWakeRecheck: true)
             return
@@ -277,7 +289,12 @@ final class AppModel {
 
         let key = displays.setupKey
         let changed = key != lastHandledSetupKey
+        let previousKey = lastHandledSetupKey
         lastHandledSetupKey = key
+        if changed {
+            // Consent to place late-opening apps belongs to one connection of a desk.
+            restoredOnSetup = restoredOnSetup.filter { $0.value == key }
+        }
         let candidate = recognized
         let moves = candidate.map { plan(for: $0.workspace).moves.count } ?? 0
         let action = AutoRestorePolicy.action(for: .init(
@@ -294,7 +311,14 @@ final class AppModel {
         case .notifyMatch(let moves):
             if let ws = candidate?.workspace { presenter?.notifyMatch(workspace: ws, moves: moves) }
         case .restoreAutomatically:
-            if let ws = candidate?.workspace { await restore(ws, automatic: true) }
+            guard let ws = candidate?.workspace else { break }
+            if isBusy {
+                // Try again when the current operation ends, against the displays then.
+                lastHandledSetupKey = previousKey
+                pendingSettle = true
+            } else {
+                await restore(ws, automatic: true)
+            }
         }
     }
 
@@ -362,9 +386,10 @@ final class AppModel {
         } else {
             workspaces.append(ws)
         }
-        persist()
+        recentlyDeleted = nil
+        let saved = persist()
         presenter?.requestNotificationPermissionIfNeeded()
-        if announce {
+        if announce && saved {
             if let replaced {
                 presenter?.toast(String(localized: "Replaced “\(ws.name)”"), actionTitle: String(localized: "Undo")) { [weak self] in
                     self?.revert(to: replaced)
@@ -382,12 +407,13 @@ final class AppModel {
         try WorkspaceTransfer.export(workspaces, includeTitles: settings.useWindowTitles)
     }
 
-    /// Adds the workspaces in `data` next to the existing ones; returns how many were added.
-    func importWorkspaces(from data: Data) throws -> Int {
+    /// Adds the workspaces in `data` next to the existing ones. Returns how many were
+    /// added, or nil when they couldn't be saved (the user was told why).
+    func importWorkspaces(from data: Data) throws -> Int? {
         let imported = try WorkspaceTransfer.decode(data)
         workspaces = WorkspaceTransfer.merge(imported, into: workspaces, includeTitles: settings.useWindowTitles)
-        persist()
-        return imported.count
+        recentlyDeleted = nil
+        return persist() ? imported.count : nil
     }
 
     /// Puts back a previous version of a workspace (undo of a replace or an update).
@@ -400,9 +426,11 @@ final class AppModel {
     func updateFromCurrentLayout(_ workspace: Workspace) async {
         await refresh()
         // Keep excluded windows excluded, by window identity rather than by title.
-        let keepExcluded = workspace.liveIDsOfExcludedWindows(in: liveWindows, runningBundleIDs: runningBundleIDs)
+        let keepExcluded = workspace.liveIDsOfExcludedWindows(in: liveWindows, currentDisplays: displays,
+                                                              runningBundleIDs: runningBundleIDs)
         let previous = workspace
-        guard saveCurrentLayout(named: workspace.name, markExcluded: keepExcluded, announce: false) != nil else { return }
+        guard saveCurrentLayout(named: workspace.name, markExcluded: keepExcluded, announce: false) != nil,
+              !storeIsReadOnly else { return }
         presenter?.toast(String(localized: "Updated “\(workspace.name)”"), actionTitle: String(localized: "Undo")) { [weak self] in
             self?.revert(to: previous)
         }
@@ -421,6 +449,7 @@ final class AppModel {
         }
         var ws = target
         ws.name = name
+        recentlyDeleted = nil
         replace(ws, touch: false)
         return .renamed
     }
@@ -440,19 +469,33 @@ final class AppModel {
 
     func delete(_ workspace: Workspace) {
         guard let index = workspaces.firstIndex(where: { $0.id == workspace.id }) else { return }
-        recentlyDeleted = (workspace, index)
+        recentlyDeleted = (workspace, index, Date())
         workspaces.remove(at: index)
-        persist()
+        restoredOnSetup[workspace.id] = nil
+        guard persist() else { return }
         presenter?.toast(String(localized: "Deleted “\(workspace.name)”"), actionTitle: String(localized: "Undo")) { [weak self] in
             self?.undoDelete()
         }
     }
 
-    var canUndoDelete: Bool { recentlyDeleted != nil }
+    /// Only right after deleting — never a workspace deleted long ago.
+    var canUndoDelete: Bool {
+        guard let deleted = recentlyDeleted else { return false }
+        return Date().timeIntervalSince(deleted.date) < Self.deleteUndoWindow
+    }
 
     func undoDelete() {
-        guard let (ws, index) = recentlyDeleted else { return }
+        guard canUndoDelete, let deleted = recentlyDeleted else { return }
+        var ws = deleted.workspace
+        let index = deleted.index
         recentlyDeleted = nil
+        if workspace(named: ws.name) != nil {
+            // A new workspace took the name meanwhile; keep both.
+            let base = ws.name
+            var n = 2
+            while workspace(named: "\(base) (\(n))") != nil { n += 1 }
+            ws.name = "\(base) (\(n))"
+        }
         workspaces.insert(ws, at: min(index, workspaces.count))
         persist()
     }
@@ -483,19 +526,34 @@ final class AppModel {
         persist()
     }
 
-    private func persist(quiet: Bool = false) {
-        guard let store else { return }
+    /// Writes the workspaces. Returns false when they were not saved; the user has then
+    /// already been told why, so callers must not show a success message.
+    @discardableResult
+    private func persist(quiet: Bool = false) -> Bool {
+        guard let store else { return true }
         guard !storeIsReadOnly else {
             log.info("Not saving: workspace file is read-only")
-            if quiet { return }
-            presenter?.toast(String(localized: "Changes aren’t saved: the workspace file is from a newer DockState."))
-            return
+            if !quiet { showReadOnlyMessage() }
+            return false
         }
         do {
             try store.save(settings.useWindowTitles ? workspaces : workspaces.map { $0.strippingTitles() })
+            return true
         } catch {
             log.error("Saving workspaces failed: \(error.localizedDescription, privacy: .public)")
-            presenter?.toast(String(localized: "Couldn’t save workspaces to disk."))
+            if !quiet { presenter?.toast(String(localized: "Couldn’t save workspaces to disk.")) }
+            return false
+        }
+    }
+
+    private func showReadOnlyMessage() {
+        if case .corrupted = storeIssue {
+            presenter?.toast(String(localized: "Changes aren’t saved: the damaged workspace file couldn’t be backed up."))
+        } else {
+            presenter?.toast(String(localized: "Changes aren’t saved: the workspace file is from a newer DockState."),
+                             actionTitle: String(localized: "Convert…")) { [weak self] in
+                self?.presenter?.reviewStoreIssue()
+            }
         }
     }
 
@@ -548,7 +606,10 @@ final class AppModel {
         let plan = plan(for: ws)
         let result = await RestoreExecutor.execute(plan, mover: windowSystem)
         settled.merge(result.undo.settledPlacements) { _, new in new }
-        if var record = undoRecord, record.workspaceID == workspace.id {
+        // Join the undo record only if it belongs to the result on screen; never extend an
+        // older restore's record (the card's Undo would then revert that one too).
+        if var record = undoRecord, let last = lastResult, record.workspaceID == workspace.id,
+           record.date == last.undo.date {
             record.entries += result.undo.entries
             undoRecord = record
         } else if !result.undo.entries.isEmpty {
@@ -558,7 +619,7 @@ final class AppModel {
             last.movedCount += result.movedCount
             last.notRestored.removeAll { $0.saved.bundleID == bundleID }
             last.notRestored += result.notRestored
-            // The card's Undo covers what was placed here too.
+            // The card's Undo covers what was placed here (and the restore it extends).
             if let record = undoRecord, record.workspaceID == workspace.id { last.undo = record }
             lastResult = last
         }
@@ -620,11 +681,12 @@ final class AppModel {
         isBusy = false
         guard !result.undo.entries.isEmpty else { return }
         settled.merge(result.undo.settledPlacements) { _, new in new }
-        undoRecord = result.undo
+        // Its own undo: the restore the user did stays undoable from its card and the menu.
+        let record = result.undo
         let appName = plan.moves.first?.saved.appName ?? bundleID
         await refresh()
         presenter?.toast(String(localized: "Placed \(appName) for “\(current.name)”"), actionTitle: String(localized: "Undo")) { [weak self] in
-            Task { await self?.undoLastRestore() }
+            Task { await self?.undo(record) }
         }
     }
 
@@ -647,6 +709,15 @@ final class AppModel {
 
     var canUndo: Bool { undoRecord != nil && permissionGranted }
 
+    /// Undoes one specific record (the late-placement toast) without touching the restore's.
+    private func undo(_ record: UndoRecord) async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        _ = await RestoreExecutor.undo(record, mover: windowSystem)
+        await refresh()
+    }
+
     func undoLastRestore() async {
         guard let record = undoRecord, !isBusy else { return }
         isBusy = true
@@ -654,6 +725,8 @@ final class AppModel {
         let result = await RestoreExecutor.undo(record, mover: windowSystem)
         undoRecord = nil
         lastResult = nil
+        // Undoing withdraws the consent to place apps opened later.
+        restoredOnSetup[record.workspaceID] = nil
         presenter?.hideResult()
         await refresh()
         let message: String
@@ -678,6 +751,8 @@ protocol Presenter: AnyObject {
     func hideResult()
     func toast(_ message: String, actionTitle: String?, action: (@MainActor () -> Void)?)
     func showPreview(_ workspace: Workspace)
+    /// Explains a read-only workspace file and offers to convert it.
+    func reviewStoreIssue()
     func notifyMatch(workspace: Workspace, moves: Int)
     func notifyNewSetup()
     func notifyUpdate(version: String, url: URL)

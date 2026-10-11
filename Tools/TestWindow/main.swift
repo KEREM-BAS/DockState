@@ -12,7 +12,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let defaults = UserDefaults.standard
         let launches = defaults.integer(forKey: "launches")
         defaults.set(launches + 1, forKey: "launches")
-        let shift = CGFloat(launches % 2) * 90
+        // Three positions in turn, so the next two launches never open where this one did.
+        let shift = CGFloat(launches % 3) * 70
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let frame = NSRect(x: screen.minX + 200 + shift, y: screen.minY + 200 + shift, width: 520, height: 340)
         let window = NSWindow(contentRect: frame, styleMask: [.titled, .closable, .resizable, .miniaturizable],

@@ -45,6 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.start()
         actions.installHotKeys()
         actions.checkForUpdatesIfDue()
+        actions.startUpdateTimer()
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.actions.checkForUpdatesIfDue() }
         }
@@ -123,6 +124,10 @@ extension AppDelegate: Presenter {
 
     func showPreview(_ workspace: Workspace) {
         actions.showPreview(workspace)
+    }
+
+    func reviewStoreIssue() {
+        if let issue = model.storeIssue { actions.reportStoreIssue(issue) }
     }
 
     func notifyMatch(workspace: Workspace, moves: Int) {

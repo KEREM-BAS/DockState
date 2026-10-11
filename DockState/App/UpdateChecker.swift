@@ -18,7 +18,6 @@ final class UpdateChecker {
     static let releasesURL = URL(string: "https://github.com/KEREM-BAS/DockState/releases.atom")!
 
     private let settings: AppSettings
-    private(set) var isChecking = false
 
     init(settings: AppSettings) {
         self.settings = settings
@@ -35,10 +34,25 @@ final class UpdateChecker {
         return Date().timeIntervalSince(last) > 24 * 3600
     }
 
+    private var inFlight: Task<Outcome, Never>?
+    var isChecking: Bool { inFlight != nil }
+
+    /// Checks GitHub. A check that's already running is joined rather than refused, so an
+    /// automatic check and "Check Now" never collide.
     func check() async -> Outcome {
-        guard !isChecking, let current = Self.currentVersion else { return .failed }
-        isChecking = true
-        defer { isChecking = false }
+        if let inFlight { return await inFlight.value }
+        let task = Task { await self.performCheck() }
+        inFlight = task
+        let outcome = await task.value
+        inFlight = nil
+        return outcome
+    }
+
+    private func performCheck() async -> Outcome {
+        guard let current = Self.currentVersion else {
+            log.error("Can't read this build's version")
+            return .failed
+        }
         var request = URLRequest(url: Self.releasesURL, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 20)
         request.setValue("application/atom+xml", forHTTPHeaderField: "Accept")
         request.setValue("DockState", forHTTPHeaderField: "User-Agent")
@@ -46,9 +60,10 @@ final class UpdateChecker {
         defer { session.finishTasksAndInvalidate() }
         do {
             let (data, response) = try await session.data(for: request)
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else { return .failed }
+            guard (response as? HTTPURLResponse)?.statusCode == 200,
+                  let releases = UpdateCheck.decodeAtomReleases(data) else { return .failed }
+            // Only a check that really read the feed counts toward "once a day".
             settings.lastUpdateCheck = Date()
-            let releases = UpdateCheck.decodeAtomReleases(data)
             if let (release, version) = UpdateCheck.newerRelease(than: current, in: releases) {
                 return .available(version: version.description, url: release.htmlURL)
             }

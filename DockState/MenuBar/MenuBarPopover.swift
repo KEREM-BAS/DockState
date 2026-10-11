@@ -37,8 +37,7 @@ struct MenuBarPopover: View {
     }
 
     private func shortcut(_ action: ShortcutAction) -> String? {
-        guard model.settings.globalShortcutsEnabled else { return nil }
-        return model.settings.shortcuts[action]?.display
+        actions.activeShortcut(for: action)?.display
     }
 }
 
