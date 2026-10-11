@@ -23,12 +23,14 @@ the universal Release app.
 
 ## End-to-end self-test (Debug builds, real windows)
 
-Grant Accessibility to the Debug build, then:
+Debug builds are **DockState Dev** (`DockStateDev.app`, bundle ID `com.kerembas.DockState.debug`). They keep
+their own settings, workspaces (`~/Library/Application Support/DockState Dev`) and Accessibility entry, so running
+one never affects an installed DockState. Grant Accessibility to `DockStateDev.app`, then:
 
 ```bash
 scripts/make-test-window-app.sh
 open build/DockStateTestWindow.app
-open -a build/DerivedData/Build/Products/Debug/DockState.app --args \
+open -a build/DerivedData/Build/Products/Debug/DockStateDev.app --args \
   -DockStateSelfTest /tmp/selftest.txt -DockStateSelfTestApp app.dockstate.testwindow \
   -DockStateSelfTestFile "$PWD/build/DockStateTestWindow.app"
 cat /tmp/selftest.txt

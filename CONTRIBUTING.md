@@ -6,7 +6,9 @@ an issue to discuss it — "does one thing well" is a feature too.
 ## Setup
 
 - macOS 14+ and Xcode 26 or later (what CI uses). No other tools or package managers needed.
-- `open DockState.xcodeproj` and Run.
+- `open DockState.xcodeproj` and Run. Debug builds are **DockState Dev** (`DockStateDev.app`, bundle ID
+  `com.kerembas.DockState.debug`) with their own settings, workspaces and Accessibility entry, so they can run
+  next to an installed DockState without affecting it.
 - Accessibility permission is tied to the code signature. Ad-hoc ("Sign to Run Locally") builds may need the
   permission toggled again after rebuilding. To avoid that, create `Config/Signing.local.xcconfig`
   (git-ignored):
