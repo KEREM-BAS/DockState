@@ -132,12 +132,26 @@ final class AppActions {
 
     func quit() { NSApp.terminate(nil) }
 
+    /// Shortcuts macOS refused because something else already uses them.
+    var shortcutConflicts: Set<ShortcutAction> = []
+
     func installHotKeys() {
         HotKeyCenter.shared.unregisterAll()
+        shortcutConflicts = []
         guard model.settings.globalShortcutsEnabled else { return }
-        HotKeyCenter.shared.register(1, .save) { [weak self] in self?.showSave() }
-        HotKeyCenter.shared.register(2, .restore) { [weak self] in self?.restoreRecognized() }
-        HotKeyCenter.shared.register(3, .undo) { [weak self] in self?.undo() }
+        for action in ShortcutAction.allCases {
+            guard let combo = model.settings.shortcuts[action] else { continue }
+            let ok = HotKeyCenter.shared.register(action.hotKeyID, combo) { [weak self] in self?.perform(action) }
+            if !ok { shortcutConflicts.insert(action) }
+        }
+    }
+
+    private func perform(_ action: ShortcutAction) {
+        switch action {
+        case .save: showSave()
+        case .restore: restoreRecognized()
+        case .undo: undo()
+        }
     }
 
     func reportStoreIssue(_ issue: StoreLoadIssue) {

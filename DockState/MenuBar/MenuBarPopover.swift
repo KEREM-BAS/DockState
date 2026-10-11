@@ -20,9 +20,9 @@ struct MenuBarPopover: View {
             }
 
             Divider().padding(.vertical, 5).padding(.horizontal, 10)
-            MenuRow(title: String(localized: "Save Current Layout…"), shortcut: shortcut("⌥⌘S"),
+            MenuRow(title: String(localized: "Save Current Layout…"), shortcut: shortcut(.save),
                     enabled: model.permissionGranted) { actions.showSave() }
-            MenuRow(title: String(localized: "Undo Last Restore"), shortcut: shortcut("⌥⌘Z"),
+            MenuRow(title: String(localized: "Undo Last Restore"), shortcut: shortcut(.undo),
                     enabled: model.canUndo) { actions.undo() }
             Divider().padding(.vertical, 5).padding(.horizontal, 10)
             MenuRow(title: String(localized: "Manage Workspaces…")) { actions.showManage() }
@@ -36,8 +36,9 @@ struct MenuBarPopover: View {
         .task { await model.refresh() }
     }
 
-    private func shortcut(_ s: String) -> String? {
-        model.settings.globalShortcutsEnabled ? s : nil
+    private func shortcut(_ action: ShortcutAction) -> String? {
+        guard model.settings.globalShortcutsEnabled else { return nil }
+        return model.settings.shortcuts[action]?.display
     }
 }
 

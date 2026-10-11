@@ -22,11 +22,17 @@ final class AppSettings {
     var missingDisplayPolicy: MissingDisplayPolicy { didSet { defaults.set(missingDisplayPolicy.rawValue, forKey: Keys.missing) } }
     var appNotRunningPolicy: AppNotRunningPolicy { didSet { defaults.set(appNotRunningPolicy.rawValue, forKey: Keys.notRunning) } }
     var didPromptForAccessibility: Bool { didSet { defaults.set(didPromptForAccessibility, forKey: Keys.prompted) } }
+    /// Global shortcuts take over the same keys in every other app, so they are off until
+    /// the user turns them on.
     var globalShortcutsEnabled: Bool { didSet { defaults.set(globalShortcutsEnabled, forKey: Keys.shortcuts) } }
+    /// Chosen key combinations; an action without an entry has no shortcut.
+    var shortcuts: [ShortcutAction: KeyCombo] {
+        didSet { defaults.set(try? JSONEncoder().encode(shortcuts), forKey: Keys.shortcutCombos) }
+    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        defaults.register(defaults: [Keys.notify: true, Keys.titles: true, Keys.shortcuts: true])
+        defaults.register(defaults: [Keys.notify: true, Keys.titles: true, Keys.shortcuts: false])
         hasCompletedOnboarding = defaults.bool(forKey: Keys.onboarding)
         notifyOnConnect = defaults.bool(forKey: Keys.notify)
         useWindowTitles = defaults.bool(forKey: Keys.titles)
@@ -34,6 +40,12 @@ final class AppSettings {
         appNotRunningPolicy = defaults.string(forKey: Keys.notRunning).flatMap(AppNotRunningPolicy.init) ?? .skip
         didPromptForAccessibility = defaults.bool(forKey: Keys.prompted)
         globalShortcutsEnabled = defaults.bool(forKey: Keys.shortcuts)
+        if let data = defaults.data(forKey: Keys.shortcutCombos),
+           let saved = try? JSONDecoder().decode([ShortcutAction: KeyCombo].self, from: data) {
+            shortcuts = saved
+        } else {
+            shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.map { ($0, $0.defaultCombo) })
+        }
     }
 
     private enum Keys {
@@ -44,5 +56,6 @@ final class AppSettings {
         static let notRunning = "appNotRunningPolicy"
         static let prompted = "didPromptForAccessibility"
         static let shortcuts = "globalShortcutsEnabled"
+        static let shortcutCombos = "shortcutCombos"
     }
 }

@@ -36,7 +36,8 @@ struct SaveLayoutView: View {
             }
         }
         .padding(20)
-        .frame(width: 420, height: 190)
+        .frame(width: 420)
+        .fixedSize(horizontal: false, vertical: true)
         .task {
             await model.refresh()
             if name.isEmpty { name = model.suggestedName() }

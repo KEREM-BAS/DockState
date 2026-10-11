@@ -29,7 +29,9 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .top)
             Spacer(minLength: 0)
         }
-        .frame(width: 520, height: 360)
+        .frame(width: 520)
+        .frame(minHeight: 300)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -205,26 +207,96 @@ private struct ShortcutSettings: View {
                 SettingsRow(title: String(localized: "Use global keyboard shortcuts"),
                             subtitle: String(localized: "They work in every app and take priority over the app’s own shortcut."),
                             showsDivider: false) {
-                    Toggle(String(localized: "Use global keyboard shortcuts"), isOn: Binding(get: { settings.globalShortcutsEnabled },
-                                             set: { settings.globalShortcutsEnabled = $0; actions.installHotKeys() }))
+                    Toggle(String(localized: "Use global keyboard shortcuts"), isOn: Binding(
+                        get: { settings.globalShortcutsEnabled },
+                        set: { settings.globalShortcutsEnabled = $0; actions.installHotKeys() }))
                         .toggleStyle(.switch).labelsHidden().controlSize(.small)
                 }
             }
             SettingsGroup {
-                shortcut(String(localized: "Save current layout"), "⌥⌘S")
-                shortcut(String(localized: "Restore matching workspace"), "⌥⌘R")
-                shortcut(String(localized: "Undo last restore"), "⌥⌘Z", divider: false)
+                ForEach(Array(ShortcutAction.allCases.enumerated()), id: \.element) { index, action in
+                    SettingsRow(title: action.title,
+                                subtitle: actions.shortcutConflicts.contains(action)
+                                    ? String(localized: "Already used by another app or by macOS. Choose another shortcut.") : nil,
+                                showsDivider: index < ShortcutAction.allCases.count - 1) {
+                        ShortcutRecorder(combo: Binding(
+                            get: { settings.shortcuts[action] },
+                            set: { settings.shortcuts[action] = $0; actions.installHotKeys() }),
+                                         title: action.title,
+                                         conflict: actions.shortcutConflicts.contains(action))
+                    }
+                }
             }
+            .disabled(!settings.globalShortcutsEnabled)
             .opacity(settings.globalShortcutsEnabled ? 1 : 0.45)
         }
     }
+}
 
-    private func shortcut(_ title: String, _ keys: String, divider: Bool = true) -> some View {
-        SettingsRow(title: title, showsDivider: divider) {
-            Text(verbatim: keys).font(.system(size: 12))
-                .padding(.horizontal, 8).padding(.vertical, 1)
-                .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 5))
+/// Click, then press the new key combination. Esc cancels, Delete removes the shortcut.
+struct ShortcutRecorder: View {
+    @Binding var combo: KeyCombo?
+    var title: String
+    var conflict: Bool
+    @State private var recording = false
+    @State private var monitor: Any?
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Button {
+                recording ? stop() : start()
+            } label: {
+                Text(label)
+                    .font(.system(size: 12))
+                    .foregroundStyle(recording ? Color.accentColor : (conflict ? Color(nsColor: .systemOrange) : .primary))
+                    .frame(minWidth: 96)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .accessibilityLabel(Text(title))
+            .accessibilityValue(Text(combo?.display ?? String(localized: "None")))
+            .accessibilityHint(Text("Press to record a new shortcut"))
+            if combo != nil && !recording {
+                Button { combo = nil } label: { Image(systemName: "xmark.circle.fill") }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                    .help(String(localized: "Remove shortcut"))
+                    .accessibilityLabel(Text("Remove shortcut"))
+            }
         }
+        .onDisappear(perform: stop)
+    }
+
+    private var label: String {
+        if recording { return String(localized: "Type shortcut…") }
+        return combo?.display ?? String(localized: "Record Shortcut")
+    }
+
+    private func start() {
+        recording = true
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            switch Int(event.keyCode) {
+            case 53: // Esc
+                stop()
+            case 51, 117: // Delete, Forward Delete
+                combo = nil
+                stop()
+            default:
+                if let new = KeyCombo(event: event) {
+                    combo = new
+                    stop()
+                } else {
+                    NSSound.beep()
+                }
+            }
+            return nil
+        }
+    }
+
+    private func stop() {
+        recording = false
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
     }
 }
 

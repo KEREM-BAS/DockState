@@ -521,6 +521,16 @@
         }
       }
     },
+    "Already used by another app or by macOS. Choose another shortcut.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başka bir uygulama veya macOS tarafından kullanılıyor. Başka bir kısayol seçin."
+          }
+        }
+      }
+    },
     "Always restore": {
       "localizations": {
         "tr": {
@@ -1257,6 +1267,16 @@
         }
       }
     },
+    "None": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yok"
+          }
+        }
+      }
+    },
     "Not Now": {
       "localizations": {
         "tr": {
@@ -1457,6 +1477,16 @@
         }
       }
     },
+    "Press to record a new shortcut": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeni bir kısayol kaydetmek için basın"
+          }
+        }
+      }
+    },
     "Preview": {
       "localizations": {
         "tr": {
@@ -1535,6 +1565,16 @@
         }
       }
     },
+    "Record Shortcut": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kısayol Kaydet"
+          }
+        }
+      }
+    },
     "Records your screen or keystrokes": {
       "localizations": {
         "tr": {
@@ -1551,6 +1591,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Yinele"
+          }
+        }
+      }
+    },
+    "Remove shortcut": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kısayolu kaldır"
           }
         }
       }
@@ -2039,6 +2089,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bu çalışma alanı artık yok."
+          }
+        }
+      }
+    },
+    "Type shortcut…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kısayolu yazın…"
           }
         }
       }
