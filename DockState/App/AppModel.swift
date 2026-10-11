@@ -83,8 +83,10 @@ final class AppModel {
     func loadDemo() {
         isDemo = true
         displays = DemoData.displays
-        workspaces = DemoData.workspaces()
-        liveWindows = DemoData.liveWindows(arranged: UserDefaults.standard.bool(forKey: "DockStateDemoArranged"))
+        // The arranged desk is the first-run picture: nothing saved yet.
+        let arranged = UserDefaults.standard.bool(forKey: "DockStateDemoArranged")
+        workspaces = arranged ? [] : DemoData.workspaces()
+        liveWindows = DemoData.liveWindows(arranged: arranged)
         runningApps = DemoData.runningApps()
         permissionGranted = true
         settings.hasCompletedOnboarding = true
