@@ -1,0 +1,99 @@
+name: Release
+
+# Push a tag like v1.2.3 to build, sign, notarize and publish a DMG.
+# Without the signing secrets below the workflow still publishes, but the DMG is
+# clearly labelled "unsigned" and the release is marked as a pre-release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build (e.g. 1.0.0) — creates a draft release"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-26
+    env:
+      HAS_SIGNING: ${{ secrets.DEVELOPER_ID_CERTIFICATE_P12 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then V="${GITHUB_REF_NAME#v}"; else V="${{ inputs.version }}"; fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Building DockState $V"
+
+      - name: Run tests
+        working-directory: Packages/DockStateKit
+        run: swift test --parallel
+
+      - name: Import Developer ID certificate
+        if: env.HAS_SIGNING == 'true'
+        env:
+          P12_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_P12 }}
+          P12_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 16)"
+          echo "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/cert.p12"
+
+      - name: Build app
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+          DEVELOPER_ID_APPLICATION: ${{ env.HAS_SIGNING == 'true' && secrets.DEVELOPER_ID_APPLICATION || '' }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: scripts/build-release.sh "${{ steps.version.outputs.version }}"
+
+      - name: Create DMG
+        env:
+          DEVELOPER_ID_APPLICATION: ${{ env.HAS_SIGNING == 'true' && secrets.DEVELOPER_ID_APPLICATION || '' }}
+          DMG_SUFFIX: ${{ env.HAS_SIGNING == 'true' && '' || '-unsigned' }}
+        run: scripts/make-dmg.sh "${{ steps.version.outputs.version }}"
+
+      - name: Notarize
+        if: env.HAS_SIGNING == 'true'
+        env:
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+          NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
+        run: |
+          export NOTARY_KEY_PATH="$RUNNER_TEMP/AuthKey.p8"
+          echo "$NOTARY_KEY_P8" > "$NOTARY_KEY_PATH"
+          scripts/notarize.sh dist/DockState-${{ steps.version.outputs.version }}.dmg
+          rm "$NOTARY_KEY_PATH"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ steps.version.outputs.version }}"
+          FLAGS=(--title "DockState $V" --generate-notes)
+          if [[ "$HAS_SIGNING" != "true" ]]; then
+            FLAGS+=(--prerelease --notes "> [!WARNING]
+          > This build is **not signed or notarized** (no Developer ID configured). macOS will block it on first launch:
+          > right-click DockState.app → **Open**, or allow it in **System Settings › Privacy & Security**.")
+          fi
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            TAG="$GITHUB_REF_NAME"
+          else
+            TAG="v$V"; FLAGS+=(--draft --target "$GITHUB_SHA")
+          fi
+          gh release create "$TAG" dist/*.dmg dist/*.dmg.sha256 "${FLAGS[@]}"
+
+      - name: Clean up keychain
+        if: always() && env.HAS_SIGNING == 'true'
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true

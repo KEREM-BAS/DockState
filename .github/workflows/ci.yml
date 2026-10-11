@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Core tests
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: xcodebuild -version && swift --version
+      - name: swift test
+        working-directory: Packages/DockStateKit
+        run: swift test --parallel
+
+  build:
+    name: Build app (universal)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Release (ad-hoc signed)
+        run: scripts/build-release.sh
+      - name: Check string catalog is up to date
+        run: |
+          scripts/sync-strings.sh
+          if ! git diff --quiet -- DockState/Localizable.xcstrings; then
+            echo "::warning::Localizable.xcstrings is out of date — run scripts/sync-strings.sh and translate new strings."
+            git diff --stat -- DockState/Localizable.xcstrings
+          fi
