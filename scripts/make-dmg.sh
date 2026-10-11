@@ -4,13 +4,15 @@
 #   scripts/make-dmg.sh <version>
 #
 # Signs the DMG when DEVELOPER_ID_APPLICATION is set. Notarize afterwards with
-# scripts/notarize.sh.
+# scripts/notarize.sh. Set DMG_SUFFIX (e.g. "-unsigned") to mark unsigned builds.
+# In GitHub Actions the DMG path is also written to the step output "dmg".
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 VERSION="${1:?usage: make-dmg.sh <version>}"
 SUFFIX="${DMG_SUFFIX:-}"
-DMG="dist/DockState-${VERSION}${SUFFIX}.dmg"
+NAME="DockState-${VERSION}${SUFFIX}.dmg"
+DMG="dist/$NAME"
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 
@@ -22,5 +24,8 @@ hdiutil create -volname "DockState" -srcfolder "$STAGE" -fs HFS+ -format UDZO -i
 if [[ -n "${DEVELOPER_ID_APPLICATION:-}" ]]; then
   codesign --sign "$DEVELOPER_ID_APPLICATION" --timestamp "$DMG"
 fi
-shasum -a 256 "$DMG" | tee "$DMG.sha256"
+# Checksum file names only the DMG, so `shasum -c` works next to the download.
+(cd dist && shasum -a 256 "$NAME" > "$NAME.sha256")
+cat "$DMG.sha256"
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then echo "dmg=$DMG" >> "$GITHUB_OUTPUT"; fi
 echo "Created $DMG"
