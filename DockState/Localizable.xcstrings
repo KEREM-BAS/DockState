@@ -721,6 +721,26 @@
         }
       }
     },
+    "Couldn’t export workspaces": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma alanları dışa aktarılamadı"
+          }
+        }
+      }
+    },
+    "Couldn’t import workspaces": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma alanları içe aktarılamadı"
+          }
+        }
+      }
+    },
     "Couldn’t open the app.": {
       "localizations": {
         "tr": {
@@ -807,6 +827,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hiçbir şey yapma"
+          }
+        }
+      }
+    },
+    "DockState Workspaces": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState Çalışma Alanları"
           }
         }
       }
@@ -1029,6 +1059,54 @@
         }
       }
     },
+    "Export Workspaces…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma Alanlarını Dışa Aktar…"
+          }
+        }
+      }
+    },
+    "Export or import workspaces": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma alanlarını dışa veya içe aktar"
+          }
+        }
+      }
+    },
+    "Exported %lld workspaces": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Exported %lld workspace"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Exported %lld workspaces"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld çalışma alanı dışa aktarıldı"
+          }
+        }
+      }
+    },
     "Fix…": {
       "localizations": {
         "tr": {
@@ -1105,6 +1183,44 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bir uygulama açık değilse"
+          }
+        }
+      }
+    },
+    "Import Workspaces…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma Alanlarını İçe Aktar…"
+          }
+        }
+      }
+    },
+    "Imported %lld workspaces": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Imported %lld workspace"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Imported %lld workspaces"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld çalışma alanı içe aktarıldı"
           }
         }
       }
@@ -1241,6 +1357,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Çalışma Alanlarını Yönet…"
+          }
+        }
+      }
+    },
+    "More": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diğer"
           }
         }
       }
@@ -1391,6 +1517,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Geri Yüklenecek Bir Şey Yok"
+          }
+        }
+      }
+    },
+    "Nothing to import": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İçe aktarılacak bir şey yok"
           }
         }
       }
@@ -2087,12 +2223,52 @@
         }
       }
     },
+    "The file contains your workspaces without window titles.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosya, çalışma alanlarınızı pencere başlıkları olmadan içerir."
+          }
+        }
+      }
+    },
+    "The file doesn’t contain any workspaces.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosyada hiç çalışma alanı yok."
+          }
+        }
+      }
+    },
+    "The file includes window titles. Turn off window titles in Settings › Restore to leave them out.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosya pencere başlıklarını içerir. Bunları dışarıda bırakmak için Ayarlar › Geri Yükle bölümünden pencere başlıklarını kapatın."
+          }
+        }
+      }
+    },
     "The file is damaged and DockState couldn’t make a backup, so it won’t overwrite it. Changes you make now aren’t saved.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
             "value": "Dosya hasarlı ve DockState yedek alamadı, bu yüzden dosyanın üzerine yazmayacak. Şimdi yaptığınız değişiklikler kaydedilmez."
+          }
+        }
+      }
+    },
+    "The file isn’t a DockState workspace export.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosya bir DockState çalışma alanı dışa aktarımı değil."
           }
         }
       }

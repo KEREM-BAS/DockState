@@ -29,15 +29,30 @@ struct ManageView: View {
                     }
                 }
                 .listStyle(.sidebar)
-                Button { actions.showSave() } label: {
-                    Label(String(localized: "Save Current Layout…"), systemImage: "plus")
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                HStack(spacing: 6) {
+                    Button { actions.showSave() } label: {
+                        Label(String(localized: "Save Current Layout…"), systemImage: "plus")
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(!model.permissionGranted)
+                    .help(String(localized: "Save Current Layout…"))
+                    Spacer(minLength: 0)
+                    Menu {
+                        Button(String(localized: "Export Workspaces…")) { actions.exportWorkspaces() }
+                            .disabled(model.workspaces.isEmpty)
+                        Button(String(localized: "Import Workspaces…")) { actions.importWorkspaces() }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .help(String(localized: "Export or import workspaces"))
+                    .accessibilityLabel(Text("More"))
                 }
-                .buttonStyle(.borderless)
-                .disabled(!model.permissionGranted)
                 .padding(12)
-                .help(String(localized: "Save Current Layout…"))
             }
             .frame(width: 220)
             .background(.regularMaterial)

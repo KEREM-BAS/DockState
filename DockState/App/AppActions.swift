@@ -2,6 +2,7 @@ import AppKit
 import Observation
 import ServiceManagement
 import SwiftUI
+import UniformTypeIdentifiers
 import DockStateCore
 import DockStateSystem
 
@@ -185,6 +186,50 @@ final class AppActions {
         } else if response == finderButton, let backup {
             NSWorkspace.shared.activateFileViewerSelecting([backup])
         }
+    }
+
+    // MARK: Export / import
+
+    func exportWorkspaces() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = String(localized: "DockState Workspaces") + ".json"
+        panel.message = model.settings.useWindowTitles
+            ? String(localized: "The file includes window titles. Turn off window titles in Settings › Restore to leave them out.")
+            : String(localized: "The file contains your workspaces without window titles.")
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try model.exportData().write(to: url, options: .atomic)
+            model.presenter?.toast(String(localized: "Exported \(model.workspaces.count) workspaces"))
+        } catch {
+            showError(String(localized: "Couldn’t export workspaces"), error.localizedDescription)
+        }
+    }
+
+    func importWorkspaces() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let count = try model.importWorkspaces(from: Data(contentsOf: url))
+            model.presenter?.toast(String(localized: "Imported \(count) workspaces"))
+        } catch WorkspaceTransfer.ImportError.empty {
+            showError(String(localized: "Nothing to import"), String(localized: "The file doesn’t contain any workspaces."))
+        } catch {
+            showError(String(localized: "Couldn’t import workspaces"),
+                      String(localized: "The file isn’t a DockState workspace export."))
+        }
+    }
+
+    private func showError(_ title: String, _ message: String) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = title
+        alert.informativeText = message
+        alert.runModal()
     }
 
     // MARK: Login item

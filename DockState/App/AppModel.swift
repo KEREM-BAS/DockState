@@ -376,6 +376,20 @@ final class AppModel {
         return ws
     }
 
+    // MARK: - Export / import
+
+    func exportData() throws -> Data {
+        try WorkspaceTransfer.export(workspaces, includeTitles: settings.useWindowTitles)
+    }
+
+    /// Adds the workspaces in `data` next to the existing ones; returns how many were added.
+    func importWorkspaces(from data: Data) throws -> Int {
+        let imported = try WorkspaceTransfer.decode(data)
+        workspaces = WorkspaceTransfer.merge(imported, into: workspaces, includeTitles: settings.useWindowTitles)
+        persist()
+        return imported.count
+    }
+
     /// Puts back a previous version of a workspace (undo of a replace or an update).
     private func revert(to previous: Workspace) {
         guard let i = workspaces.firstIndex(where: { $0.id == previous.id }) else { return }
