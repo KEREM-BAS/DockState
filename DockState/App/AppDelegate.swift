@@ -29,12 +29,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         #if DEBUG
         if SelfTest.runIfRequested() { return }
+        if let out = UserDefaults.standard.string(forKey: "DockStateUpdateProbe") {
+            // Writes the result of one real update check, for development.
+            Task {
+                let outcome = await actions.updateChecker.check()
+                try? "\(outcome)".write(toFile: out, atomically: true, encoding: .utf8)
+                NSApp.terminate(nil)
+            }
+            return
+        }
         #endif
         model.presenter = self
         UNUserNotificationCenter.current().delegate = self
         registerNotificationCategories()
         model.start()
         actions.installHotKeys()
+        actions.checkForUpdatesIfDue()
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.actions.checkForUpdatesIfDue() }
+        }
         #if DEBUG
         if openDebugWindowFromLaunchArguments() { return }
         #endif
@@ -121,6 +134,15 @@ extension AppDelegate: Presenter {
         post(content, id: "match")
     }
 
+    func notifyUpdate(version: String, url: URL) {
+        let content = UNMutableNotificationContent()
+        content.title = String(localized: "DockState \(version) is available")
+        content.body = String(localized: "Click to open the download page on GitHub.")
+        content.categoryIdentifier = Notifications.updateCategory
+        content.userInfo = [Notifications.urlKey: url.absoluteString]
+        post(content, id: "update")
+    }
+
     func notifyNewSetup() {
         let content = UNMutableNotificationContent()
         content.title = String(localized: "New display setup")
@@ -162,6 +184,8 @@ enum Notifications {
     static let restoreAction = "restore"
     static let saveAction = "save"
     static let workspaceKey = "workspace"
+    static let updateCategory = "update"
+    static let urlKey = "url"
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
@@ -177,6 +201,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         let action = response.actionIdentifier
         let category = response.notification.request.content.categoryIdentifier
         let workspaceID = (response.notification.request.content.userInfo[Notifications.workspaceKey] as? String).flatMap(UUID.init)
+        let link = (response.notification.request.content.userInfo[Notifications.urlKey] as? String).flatMap(URL.init(string:))
         await MainActor.run {
             switch (category, action) {
             case (Notifications.matchCategory, Notifications.restoreAction):
@@ -185,6 +210,9 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                 if let id = workspaceID, let ws = model.workspace(id: id) { actions.showPreview(ws) }
             case (Notifications.newSetupCategory, Notifications.saveAction), (Notifications.newSetupCategory, UNNotificationDefaultActionIdentifier):
                 actions.showSave()
+            case (Notifications.updateCategory, _):
+                // Only ever our own GitHub releases page.
+                if let link, link.host == "github.com" { NSWorkspace.shared.open(link) }
             default:
                 break
             }

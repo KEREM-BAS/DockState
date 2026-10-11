@@ -671,6 +671,46 @@
         }
       }
     },
+    "Check Now": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şimdi Denetle"
+          }
+        }
+      }
+    },
+    "Check for updates automatically": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güncellemeleri otomatik denetle"
+          }
+        }
+      }
+    },
+    "Checking for updates…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güncellemeler denetleniyor…"
+          }
+        }
+      }
+    },
+    "Click to open the download page on GitHub.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub’daki indirme sayfasını açmak için tıklayın."
+          }
+        }
+      }
+    },
     "Connect these displays to see the status.": {
       "localizations": {
         "tr": {
@@ -717,6 +757,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Giriş öğesi değiştirilemedi: %@"
+          }
+        }
+      }
+    },
+    "Couldn’t check for updates": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güncellemeler denetlenemedi"
           }
         }
       }
@@ -831,6 +881,16 @@
         }
       }
     },
+    "DockState %@ is available": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState %@ yayımlandı"
+          }
+        }
+      }
+    },
     "DockState Workspaces": {
       "localizations": {
         "tr": {
@@ -867,6 +927,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "DockState açık kaynaklıdır."
+          }
+        }
+      }
+    },
+    "DockState is up to date.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState güncel."
           }
         }
       }
@@ -1019,6 +1089,16 @@
         }
       }
     },
+    "Download": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İndir"
+          }
+        }
+      }
+    },
     "Each workspace can ask, restore automatically, or do nothing when its displays connect. Change this in Manage Workspaces.": {
       "localizations": {
         "tr": {
@@ -1143,6 +1223,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Başla"
+          }
+        }
+      }
+    },
+    "GitHub couldn’t be reached. Try again later.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub’a ulaşılamadı. Daha sonra yeniden deneyin."
           }
         }
       }
@@ -1301,6 +1391,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Yalnızca Dizüstü"
+          }
+        }
+      }
+    },
+    "Last checked %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son denetim: %@"
           }
         }
       }
@@ -1577,6 +1677,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ofis"
+          }
+        }
+      }
+    },
+    "Once a day, DockState asks GitHub for the list of releases. Nothing else is sent.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DockState günde bir kez GitHub’dan sürüm listesini ister. Başka hiçbir şey gönderilmez."
           }
         }
       }
@@ -2453,6 +2563,16 @@
         }
       }
     },
+    "Updates": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güncellemeler"
+          }
+        }
+      }
+    },
     "Use global keyboard shortcuts": {
       "localizations": {
         "tr": {
@@ -2699,6 +2819,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Her geri yüklemeyi geri alabilirsiniz."
+          }
+        }
+      }
+    },
+    "You have %@. Download the new version from GitHub.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sizdeki sürüm %@. Yeni sürümü GitHub’dan indirin."
           }
         }
       }

@@ -12,6 +12,10 @@ import DockStateSystem
 final class AppActions {
     @ObservationIgnored let model: AppModel
     @ObservationIgnored private let router = WindowRouter()
+    @ObservationIgnored lazy var updateChecker = UpdateChecker(settings: model.settings)
+    /// Set when a newer release was found; shown in Settings › About.
+    var availableUpdate: (version: String, url: URL)?
+    var isCheckingForUpdates = false
 
     /// Which workspace the Manage window shows.
     var manageSelection: UUID?
@@ -185,6 +189,45 @@ final class AppActions {
             model.convertStoreToCurrentVersion()
         } else if response == finderButton, let backup {
             NSWorkspace.shared.activateFileViewerSelecting([backup])
+        }
+    }
+
+    // MARK: Updates
+
+    /// Runs the daily check if the user turned it on. Results arrive as a notification.
+    func checkForUpdatesIfDue() {
+        guard updateChecker.isDue else { return }
+        Task {
+            if case .available(let version, let url) = await updateChecker.check() {
+                availableUpdate = (version, url)
+                model.presenter?.notifyUpdate(version: version, url: url)
+            }
+        }
+    }
+
+    /// "Check Now": always answers, even when there's nothing new.
+    func checkForUpdatesNow() {
+        isCheckingForUpdates = true
+        Task {
+            let outcome = await updateChecker.check()
+            isCheckingForUpdates = false
+            switch outcome {
+            case .available(let version, let url):
+                availableUpdate = (version, url)
+                let alert = NSAlert()
+                alert.messageText = String(localized: "DockState \(version) is available")
+                alert.informativeText = String(localized: "You have \(UpdateChecker.currentVersion?.description ?? "?"). Download the new version from GitHub.")
+                alert.addButton(withTitle: String(localized: "Download"))
+                alert.addButton(withTitle: String(localized: "Later"))
+                NSApp.activate(ignoringOtherApps: true)
+                if alert.runModal() == .alertFirstButtonReturn { NSWorkspace.shared.open(url) }
+            case .upToDate:
+                availableUpdate = nil
+                model.presenter?.toast(String(localized: "DockState is up to date."))
+            case .failed:
+                showError(String(localized: "Couldn’t check for updates"),
+                          String(localized: "GitHub couldn’t be reached. Try again later."))
+            }
         }
     }
 
