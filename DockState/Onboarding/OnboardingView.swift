@@ -108,6 +108,9 @@ private struct PermissionStep: View {
     @Environment(AppModel.self) private var model
     @Environment(AppActions.self) private var actions
     @State private var waiting = false
+    @State private var resetting = false
+    @State private var didReset = false
+    @State private var resetFailed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -146,8 +149,15 @@ private struct PermissionStep: View {
             .padding(.top, 18)
 
             HStack(spacing: 12) {
-                Text("In System Settings, go to **Privacy & Security › Accessibility** and turn on DockState.")
-                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                Group {
+                    if AccessibilityPermission.paneIsNamedDeviceControl {
+                        Text("In System Settings, go to **Privacy & Security › Device Control and Data Access** and turn on DockState.")
+                    } else {
+                        Text("In System Settings, go to **Privacy & Security › Accessibility** and turn on DockState.")
+                    }
+                }
+                .font(.system(size: 12)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
                 Spacer()
                 Image(systemName: model.permissionGranted ? "checkmark.circle.fill" : "switch.2")
                     .foregroundStyle(model.permissionGranted ? Color.green : Color.secondary)
@@ -159,12 +169,37 @@ private struct PermissionStep: View {
             .padding(.horizontal, 40)
             .padding(.top, 12)
 
-            if model.permissionLooksStale {
-                Text("Already turned on? After an update, macOS can keep the switch on for the old version. Select DockState in the list, remove it with –, then add it again with +.")
+            if model.permissionLooksStale && !didReset {
+                HStack(spacing: 12) {
+                    Group {
+                        if resetFailed {
+                            Text("Couldn’t reset it. Select DockState in the list, remove it with –, then add it again with +.")
+                        } else {
+                            Text("Already turned on? macOS can keep the switch on for another copy of DockState. Reset the permission, then turn DockState on again.")
+                        }
+                    }
                     .font(.system(size: 11.5)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 40)
-                    .padding(.top, 8)
+                    Spacer(minLength: 0)
+                    if !resetFailed {
+                        Button(String(localized: "Reset Permission")) {
+                            Task {
+                                resetting = true
+                                if await model.resetPermission() {
+                                    didReset = true
+                                    waiting = true
+                                } else {
+                                    resetFailed = true
+                                }
+                                resetting = false
+                            }
+                        }
+                        .controlSize(.small)
+                        .disabled(resetting)
+                    }
+                }
+                .padding(.horizontal, 40)
+                .padding(.top, 8)
             }
 
             HStack(spacing: 12) {
@@ -218,6 +253,7 @@ private struct PermissionStep: View {
 
     private var statusText: String {
         if model.permissionGranted { return String(localized: "Permission granted — continuing…") }
+        if didReset { return String(localized: "Turn DockState on in the list — this updates on its own.") }
         if waiting { return String(localized: "Waiting for permission — this updates on its own.") }
         return String(localized: "Not allowed yet")
     }

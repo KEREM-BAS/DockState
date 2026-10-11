@@ -34,6 +34,12 @@ final class AppModel {
     private(set) var liveWindows: [LiveWindow] = []
     private(set) var runningApps: [RunningApp] = []
     private(set) var permissionGranted = AccessibilityPermission.isGranted
+    /// The user asked for permission in an earlier session, so a missing permission now may
+    /// be a stale entry rather than a first-time setup.
+    @ObservationIgnored private let promptedInEarlierSession: Bool
+    /// Still not trusted a while after the user went to System Settings.
+    private(set) var permissionWaitIsLong = false
+    @ObservationIgnored private var longWaitTask: Task<Void, Never>?
     private(set) var storeIssue: StoreLoadIssue?
     /// The workspace file came from a newer DockState (or couldn't be backed up): changes
     /// stay in memory until the user agrees to convert it.
@@ -66,6 +72,8 @@ final class AppModel {
     init(settings: AppSettings = AppSettings(), storeURL: URL? = try? WorkspaceStore.defaultURL()) {
         self.settings = settings
         self.store = storeURL.map(WorkspaceStore.init(fileURL:))
+        promptedInEarlierSession = settings.didPromptForAccessibility
+        if permissionGranted { settings.permissionWasGranted = true }
         if let store {
             let result = store.load()
             workspaces = result.workspaces
@@ -88,7 +96,10 @@ final class AppModel {
         workspaces = arranged ? [] : DemoData.workspaces()
         liveWindows = DemoData.liveWindows(arranged: arranged)
         runningApps = DemoData.runningApps()
-        permissionGranted = true
+        // `-DockStateDemoPermission missing|stale` shows the permission step before it's granted.
+        let permission = UserDefaults.standard.string(forKey: "DockStateDemoPermission")
+        permissionGranted = permission == nil
+        settings.permissionWasGranted = permission == "stale"
         settings.hasCompletedOnboarding = true
     }
 
@@ -164,7 +175,11 @@ final class AppModel {
         guard granted != permissionGranted else { return }
         permissionGranted = granted
         log.info("Accessibility permission changed: \(granted, privacy: .public)")
-        if !granted {
+        if granted {
+            settings.permissionWasGranted = true
+            longWaitTask?.cancel()
+            permissionWaitIsLong = false
+        } else {
             // Permission was revoked: drop anything that references live windows.
             liveWindows = []
             undoRecord = nil
@@ -183,6 +198,33 @@ final class AppModel {
             AccessibilityPermission.openSystemSettings()
         }
         beginWatchingPermission()
+        noticeLongWait()
+    }
+
+    /// Removes this app's entry from the list and adds this build back (switch off), with
+    /// the system prompt. Returns false when macOS refused the reset; System Settings is
+    /// opened instead so the user can remove the entry by hand.
+    func resetPermission() async -> Bool {
+        guard let bundleID = Bundle.main.bundleIdentifier else { return false }
+        let reset = await AccessibilityPermission.reset(bundleID: bundleID)
+        log.info("Accessibility entry reset: \(reset, privacy: .public)")
+        if reset {
+            settings.didPromptForAccessibility = true
+            AccessibilityPermission.requestPrompt()
+        } else {
+            AccessibilityPermission.openSystemSettings()
+        }
+        beginWatchingPermission()
+        return reset
+    }
+
+    private func noticeLongWait() {
+        longWaitTask?.cancel()
+        longWaitTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(10))
+            guard let self, !Task.isCancelled, !self.permissionGranted else { return }
+            self.permissionWaitIsLong = true
+        }
     }
 
     func stopWatchingPermission() {
@@ -190,10 +232,11 @@ final class AppModel {
         permissionTimer = nil
     }
 
-    /// The user allowed DockState before, but this build isn't trusted — typical after an
-    /// update of an unsigned build: the switch looks on but belongs to the old version.
+    /// The switch may look on but belong to another copy of DockState (an unsigned build,
+    /// or a development build with the same bundle ID): DockState was trusted before, the
+    /// user asked in an earlier session, or nothing happened a while after asking.
     var permissionLooksStale: Bool {
-        settings.didPromptForAccessibility && !permissionGranted
+        !permissionGranted && (settings.permissionWasGranted || promptedInEarlierSession || permissionWaitIsLong)
     }
 
     // MARK: - Scanning

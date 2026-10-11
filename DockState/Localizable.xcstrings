@@ -617,12 +617,12 @@
         }
       }
     },
-    "Already turned on? After an update, macOS can keep the switch on for the old version. Select DockState in the list, remove it with –, then add it again with +.": {
+    "Already turned on? macOS can keep the switch on for another copy of DockState. Reset the permission, then turn DockState on again.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zaten açık mı? Bir güncellemeden sonra macOS anahtarı eski sürüm için açık tutabilir. Listede DockState’i seçin, – ile kaldırın, ardından + ile yeniden ekleyin."
+            "value": "Zaten açık mı? macOS, anahtarı DockState’in başka bir kopyası için açık tutabilir. İzni sıfırlayın, ardından DockState’i yeniden açın."
           }
         }
       }
@@ -923,6 +923,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Uygulama açılamadı."
+          }
+        }
+      }
+    },
+    "Couldn’t reset it. Select DockState in the list, remove it with –, then add it again with +.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sıfırlanamadı. Listede DockState’i seçin, – ile kaldırın, ardından + ile yeniden ekleyin."
           }
         }
       }
@@ -1457,6 +1467,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sistem Ayarları’nda **Gizlilik ve Güvenlik › Erişilebilirlik** bölümüne gidin ve DockState’i açın."
+          }
+        }
+      }
+    },
+    "In System Settings, go to **Privacy & Security › Device Control and Data Access** and turn on DockState.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sistem Ayarları’nda **Gizlilik ve Güvenlik › Aygıt Denetimi ve Veri Erişimi** bölümüne gidin ve DockState’i açın."
           }
         }
       }
@@ -2241,6 +2261,16 @@
         }
       }
     },
+    "Reset Permission": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İzni Sıfırla"
+          }
+        }
+      }
+    },
     "Restart": {
       "localizations": {
         "tr": {
@@ -2775,6 +2805,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bu çalışma alanı artık yok."
+          }
+        }
+      }
+    },
+    "Turn DockState on in the list — this updates on its own.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listede DockState’i açın — bu kendiliğinden güncellenir."
           }
         }
       }
