@@ -1,1 +1,24 @@
+# Claude Design source bundles (kept local)
 /design
+
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+/build/
+*.xcresult
+
+# SwiftPM
+.build/
+.swiftpm/
+Packages/*/Package.resolved
+
+# Local signing overrides (see Config/Signing.xcconfig)
+Config/Signing.local.xcconfig
+
+# Release artefacts
+/dist/
+*.dmg
